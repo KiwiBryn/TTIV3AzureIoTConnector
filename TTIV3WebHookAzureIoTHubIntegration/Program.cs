@@ -15,6 +15,7 @@
 //---------------------------------------------------------------------------------
 namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration
 {
+	using Microsoft.Extensions.Configuration;
 	using Microsoft.Extensions.Hosting;
 
 	public class Program
@@ -22,6 +23,10 @@ namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration
 		public static void Main()
 		{
 			var host = new HostBuilder()
+						.ConfigureAppConfiguration(e =>
+							e.AddEnvironmentVariables()
+						  .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true).AddEnvironmentVariables().Build()
+					 )
 				 .ConfigureFunctionsWorkerDefaults()
 				 .Build();
 
