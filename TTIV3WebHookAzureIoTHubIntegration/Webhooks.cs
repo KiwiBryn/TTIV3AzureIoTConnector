@@ -16,24 +16,103 @@
 namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration
 {
 	using System;
+	using System.Collections.Concurrent;
+	using System.Globalization;
 	using System.Net;
+	using System.Text;
 	using System.Threading.Tasks;
+
+	using Microsoft.Azure.Devices.Client;
 	using Microsoft.Azure.Functions.Worker;
 	using Microsoft.Azure.Functions.Worker.Http;
+
+	using Microsoft.Extensions.Configuration;
 	using Microsoft.Extensions.Logging;
 
-	public static class Webhooks
+	using Newtonsoft.Json;
+	using Newtonsoft.Json.Linq;
+
+	public class Webhooks
 	{
+		private readonly IConfiguration _configuration;
+		private static readonly ConcurrentDictionary<string, DeviceClient> _DeviceClients = new ConcurrentDictionary<string, DeviceClient>();
+
+		public Webhooks( IConfiguration configuration)
+		{
+			_configuration = configuration;
+		}
+
 		[Function("Uplink")]
-		public static async Task<HttpResponseData> Uplink([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req, FunctionContext executionContext)
+		public async Task<HttpResponseData> Uplink([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
 			var logger = executionContext.GetLogger("Uplink");
-			logger.LogInformation("Uplink function processed a request.");
 
-			var response = req.CreateResponse(HttpStatusCode.OK);
-			response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+			// Wrap all the processing in a try\catch so if anything blows up we have logged it. Will need to specialise for connectivity failues etc.
+			try
+			{
+				Models.PayloadUplink payload = JsonConvert.DeserializeObject<Models.PayloadUplink>(await req.ReadAsStringAsync());
+				if (payload == null)
+				{
+					logger.LogInformation("Uplink: Payload {0} invalid", await req.ReadAsStringAsync());
 
-			return response;
+					return req.CreateResponse(HttpStatusCode.BadRequest);
+				}
+
+				if (payload.UplinkMessage.Port.Value == 0)
+				{
+					logger.LogInformation("TTI Control message");
+
+					return req.CreateResponse(HttpStatusCode.BadRequest);
+				}
+
+				string applicationId = payload.EndDeviceIds.ApplicationIds.ApplicationId;
+				string deviceId = payload.EndDeviceIds.DeviceId;
+				int port = payload.UplinkMessage.Port.Value;
+
+				logger.LogInformation("Uplink-ApplicationID:{0} DeviceID:{1} Port:{2} Payload Raw:{3}", applicationId, deviceId, port, payload.UplinkMessage.PayloadRaw);
+
+				if (!_DeviceClients.TryGetValue(deviceId, out DeviceClient deviceClient))
+				{
+					logger.LogWarning("Uplink-Unknown DeviceID:{0}", deviceId);
+
+					deviceClient = DeviceClient.CreateFromConnectionString(_configuration.GetConnectionString("AzureIoTHub"), deviceId);
+
+					await deviceClient.OpenAsync();
+
+					if (!_DeviceClients.TryAdd(deviceId, deviceClient))
+					{
+						logger.LogWarning("Uplink-TryAdd failed DeviceID:{0}", deviceId);
+					}
+				}
+
+				JObject telemetryEvent = new JObject
+				{
+					{ "ApplicationID", applicationId },
+					{ "DeviceID", deviceId },
+					{ "Port", port },
+					{ "PayloadRaw", payload.UplinkMessage.PayloadRaw }
+				};
+
+				// Send the message to Azure IoT Hub/Azure IoT Central
+				using (Message ioTHubmessage = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(telemetryEvent))))
+				{
+					// Ensure the displayed time is the acquired time rather than the uploaded time. 
+					ioTHubmessage.Properties.Add("iothub-creation-time-utc", payload.UplinkMessage.ReceivedAtUtc.ToString("s", CultureInfo.InvariantCulture));
+					ioTHubmessage.Properties.Add("ApplicationId", applicationId);
+					ioTHubmessage.Properties.Add("DeviceId", deviceId);
+					ioTHubmessage.Properties.Add("port", port.ToString());
+
+					await deviceClient.SendEventAsync(ioTHubmessage);
+				}
+			}
+			catch (Exception ex)
+			{
+				logger.LogError(ex, "Uplink message processing failed");
+
+				return req.CreateResponse(HttpStatusCode.InternalServerError);
+			}
+
+			return req.CreateResponse(HttpStatusCode.OK);
 		}
 
 		[Function("Queued")]
