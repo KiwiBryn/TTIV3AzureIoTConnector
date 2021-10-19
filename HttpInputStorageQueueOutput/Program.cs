@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 //---------------------------------------------------------------------------------
-namespace HttpInputStorageQueueOutput
+namespace devMobile.IoT.TheThingsIndustries.HttpInputStorageQueueOutput
 {
 	using Microsoft.Extensions.Hosting;
 

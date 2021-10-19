@@ -14,7 +14,7 @@
 //
 // https://github.com/Azure/azure-functions-dotnet-worker/wiki/.NET-Worker-bindings
 //---------------------------------------------------------------------------------
-namespace HttpInputStorageQueueOutput
+namespace devMobile.IoT.TheThingsIndustries.HttpInputStorageQueueOutput
 {
 	using System.Net;
 	using System.Threading.Tasks;
