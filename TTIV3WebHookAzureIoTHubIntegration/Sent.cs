@@ -1,4 +1,4 @@
-// Copyright (c) October 2021, devMobile Software
+﻿// Copyright (c) October 2021, devMobile Software
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,19 +15,26 @@
 //---------------------------------------------------------------------------------
 namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration
 {
-	using System.Collections.Concurrent;
+	using System.Net;
+	using System.Threading.Tasks;
 
-	using Microsoft.Azure.Devices.Client;
-	using Microsoft.Extensions.Configuration;
+	using Microsoft.Azure.Functions.Worker;
+	using Microsoft.Azure.Functions.Worker.Http;
+
+	using Microsoft.Extensions.Logging;
 
 	public partial class Webhooks
 	{
-		private readonly IConfiguration _configuration;
-		private static readonly ConcurrentDictionary<string, DeviceClient> _DeviceClients = new ConcurrentDictionary<string, DeviceClient>();
-
-		public Webhooks( IConfiguration configuration)
+		[Function("Sent")]
+		public static async Task<HttpResponseData> Sent([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
-			_configuration = configuration;
+			var logger = executionContext.GetLogger("Sent");
+			logger.LogInformation("Sent function processed a request.");
+
+			var response = req.CreateResponse(HttpStatusCode.OK);
+			response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+
+			return response;
 		}
 	}
 }
