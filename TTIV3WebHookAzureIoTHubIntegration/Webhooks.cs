@@ -23,6 +23,7 @@ namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration
 	using System.Threading.Tasks;
 
 	using Microsoft.Azure.Devices.Client;
+	using Microsoft.Azure.Devices.Client.Exceptions;
 	using Microsoft.Azure.Functions.Worker;
 	using Microsoft.Azure.Functions.Worker.Http;
 
@@ -73,15 +74,26 @@ namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration
 
 				if (!_DeviceClients.TryGetValue(deviceId, out DeviceClient deviceClient))
 				{
-					logger.LogWarning("Uplink-Unknown DeviceID:{0}", deviceId);
+					logger.LogInformation("Uplink-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 
 					deviceClient = DeviceClient.CreateFromConnectionString(_configuration.GetConnectionString("AzureIoTHub"), deviceId);
 
-					await deviceClient.OpenAsync();
+					try
+					{
+						await deviceClient.OpenAsync();
+					}
+					catch(DeviceNotFoundException )
+					{
+						logger.LogWarning("Uplink-Unknown DeviceID:{0}", deviceId);
+
+						return req.CreateResponse(HttpStatusCode.NotFound);
+					}
 
 					if (!_DeviceClients.TryAdd(deviceId, deviceClient))
 					{
-						logger.LogWarning("Uplink-TryAdd failed DeviceID:{0}", deviceId);
+						logger.LogWarning("Uplink-TryAdd failed for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
+
+						return req.CreateResponse(HttpStatusCode.Conflict);
 					}
 				}
 
