@@ -112,7 +112,7 @@ namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration.Models
 
    public class Locations
    {
-      public User user { get; set; }
+      public User User { get; set; }
    }
 
    public class UplinkMessage
@@ -144,7 +144,7 @@ namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration.Models
       [JsonProperty("consumed_airtime")]
       public string ConsumedAirtime { get; set; }
 
-      public Locations locations { get; set; }
+      public Locations Locations { get; set; }
    }
 
    public class PayloadUplink

@@ -50,15 +50,16 @@ namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
 
-				if (payload.UplinkMessage.Port.Value == 0)
+				string applicationId = payload.EndDeviceIds.ApplicationIds.ApplicationId;
+				string deviceId = payload.EndDeviceIds.DeviceId;
+
+				if ((payload.UplinkMessage.Port == null ) || (!payload.UplinkMessage.Port.HasValue) || (payload.UplinkMessage.Port.Value == 0))
 				{
-					logger.LogInformation("TTI Control message");
+					logger.LogInformation("Uplink-ApplicationID:{0} DeviceID:{1} Payload Raw:{2} Control nessage", applicationId, deviceId, payload.UplinkMessage.PayloadRaw);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
 
-				string applicationId = payload.EndDeviceIds.ApplicationIds.ApplicationId;
-				string deviceId = payload.EndDeviceIds.DeviceId;
 				int port = payload.UplinkMessage.Port.Value;
 
 				logger.LogInformation("Uplink-ApplicationID:{0} DeviceID:{1} Port:{2} Payload Raw:{3}", applicationId, deviceId, port, payload.UplinkMessage.PayloadRaw);
@@ -96,12 +97,19 @@ namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration
 					{ "PayloadRaw", payload.UplinkMessage.PayloadRaw }
 				};
 
-				// Send the message to Azure IoT Hub/Azure IoT Central
+				// If the payload has been decoded by payload formatter, put it in the message body.
+				if (payload.UplinkMessage.PayloadDecoded != null)
+				{
+					telemetryEvent.Add("PayloadDecoded", payload.UplinkMessage.PayloadDecoded);
+				}
+
+				// Send the message to Azure IoT Hub
 				using (Message ioTHubmessage = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(telemetryEvent))))
 				{
 					// Ensure the displayed time is the acquired time rather than the uploaded time. 
 					ioTHubmessage.Properties.Add("iothub-creation-time-utc", payload.UplinkMessage.ReceivedAtUtc.ToString("s", CultureInfo.InvariantCulture));
 					ioTHubmessage.Properties.Add("ApplicationId", applicationId);
+					ioTHubmessage.Properties.Add("DeviceEUI", payload.EndDeviceIds.DeviceEui);
 					ioTHubmessage.Properties.Add("DeviceId", deviceId);
 					ioTHubmessage.Properties.Add("port", port.ToString());
 
