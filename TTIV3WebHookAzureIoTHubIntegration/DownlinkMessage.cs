@@ -16,11 +16,16 @@
 namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
 	using System;
+	using System.Collections.Generic;
+	using System.Net;
 	using System.Text;
 	using System.Threading.Tasks;
 
 	using Microsoft.Azure.Devices.Client;
 	using Microsoft.Extensions.Logging;
+
+	using Newtonsoft.Json;
+	using Newtonsoft.Json.Linq;
 
 	public partial class Integration
 	{
@@ -40,7 +45,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				{
 					string payloadText = Encoding.UTF8.GetString(message.GetBytes()).Trim();
 
-					// Looks like it's Azure IoT hub message, Put the one mandatory message property first, just because
 					if (!AzureDownlinkMessage.PortTryGet(message.Properties, out byte port))
 					{
 						_logger.LogWarning("Downlink-Port property is invalid");
@@ -71,6 +75,67 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 						await deviceClient.RejectAsync(message);
 						return;
+					}
+
+					Models.Downlink downlink = new Models.Downlink()
+					{
+						Confirmed = confirmed,
+						Priority = priority,
+						Port = port,
+						CorrelationIds = AzureLockToken.Add(message.LockToken),
+					};
+
+					// Split over multiple lines in an attempt to improve readability. In this scenario a valid JSON string should start/end with {/} for an object or [/] for an array
+					if ((payloadText.StartsWith("{") && payloadText.EndsWith("}"))
+															||
+						((payloadText.StartsWith("[") && payloadText.EndsWith("]"))))
+					{
+						try
+						{
+							downlink.PayloadDecoded = JToken.Parse(payloadText);
+						}
+						catch (JsonReaderException)
+						{
+							downlink.PayloadRaw = payloadText;
+						}
+					}
+					else
+					{
+						downlink.PayloadRaw = payloadText;
+					}
+
+					_logger.LogInformation("Downlink-IoT Hub DeviceID:{0} MessageID:{2} LockToken:{3} Port:{4} Confirmed:{5} Priority:{6} Queue:{7}",
+						receiveMessageHandlerConext.DeviceId,
+						message.MessageId,
+						message.LockToken,
+						downlink.Port,
+						downlink.Confirmed,
+						downlink.Priority,
+						queue);
+
+					Models.DownlinkPayload Payload = new Models.DownlinkPayload()
+					{
+						Downlinks = new List<Models.Downlink>()
+						{
+							downlink
+						}
+					};
+
+					// TODO Temporary until sent/queued/failed/ack/nack implemented
+					await deviceClient.CompleteAsync(message);
+
+					string url = $"{receiveMessageHandlerConext.WebhookBaseURL}/{receiveMessageHandlerConext.ApplicationId}/webhooks/{receiveMessageHandlerConext.WebhookId}/devices/{receiveMessageHandlerConext.DeviceId}/down/{queue}".ToLower();
+
+					using (var client = new WebClient())
+					{
+						client.Headers.Add("Authorization", $"Bearer {receiveMessageHandlerConext.ApiKey}");
+
+						client.UploadString(new Uri(url), JsonConvert.SerializeObject(Payload));
+
+						if (!downlink.Confirmed)
+						{
+							await deviceClient.CompleteAsync(message);
+						}
 					}
 				}
 			}

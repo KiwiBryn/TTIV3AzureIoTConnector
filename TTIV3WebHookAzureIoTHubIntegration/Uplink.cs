@@ -92,6 +92,9 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					{ 
 						DeviceId = deviceId,
 						ApplicationId = applicationId,
+						WebhookId = _configuration.GetSection("TheThingsIndustries").GetSection("WebhookId").Value,
+						WebhookBaseURL = _configuration.GetSection("TheThingsIndustries").GetSection("WebhookBaseURL").Value,
+						ApiKey = _configuration.GetSection("TheThingsIndustries").GetSection("APiKey").Value,
 					};
 
 					await deviceClient.SetReceiveMessageHandlerAsync(AzureIoTHubClientReceiveMessageHandler, context);

@@ -1,5 +1,5 @@
 ﻿//---------------------------------------------------------------------------------
-// Copyright (c) November 2020, devMobile Software
+// Copyright (c) November 2021, devMobile Software
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,8 +18,14 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub.Models
 {
    public class AzureIoTHubReceiveMessageHandlerContext
    {
-      public string TenantId { get; set; }
-      public string DeviceId { get; set; }
+      public string WebhookBaseURL { get; set; }
+
+      public string WebhookId { get; set; }
+
+      public string ApiKey { get; set; }
+
       public string ApplicationId { get; set; }
+
+      public string DeviceId { get; set; }
    }
 }

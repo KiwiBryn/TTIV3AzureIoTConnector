@@ -48,9 +48,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub.Models
 
    public class DownlinkPayload
    {
-      [JsonProperty("end_device_ids")]
-      public EndDeviceIds EndDeviceIds { get; set; }
-
       [JsonProperty("downlinks")]
       public List<Downlink> Downlinks{ get; set; }
    }
