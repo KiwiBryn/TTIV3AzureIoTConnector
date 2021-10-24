@@ -87,6 +87,16 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 						return req.CreateResponse(HttpStatusCode.Conflict);
 					}
+
+					Models.AzureIoTHubReceiveMessageHandlerContext context = new Models.AzureIoTHubReceiveMessageHandlerContext()
+					{ 
+						DeviceId = deviceId,
+						ApplicationId = applicationId,
+					};
+
+					await deviceClient.SetReceiveMessageHandlerAsync(AzureIoTHubClientReceiveMessageHandler, context);
+
+					await deviceClient.SetMethodDefaultHandlerAsync(AzureIoTHubClientDefaultMethodHandler, context);
 				}
 
 				JObject telemetryEvent = new JObject
