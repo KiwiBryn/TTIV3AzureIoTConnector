@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 //---------------------------------------------------------------------------------
-namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration.Models
+namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub.Models
 {
    using System;
    using System.Collections.Generic;

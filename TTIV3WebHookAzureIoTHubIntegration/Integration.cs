@@ -1,4 +1,4 @@
-﻿// Copyright (c) October 2021, devMobile Software
+// Copyright (c) October 2021, devMobile Software
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,26 +15,24 @@
 //---------------------------------------------------------------------------------
 namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
-	using System.Net;
+	using System;
+	using System.Collections.Concurrent;
 	using System.Threading.Tasks;
-
-	using Microsoft.Azure.Functions.Worker;
-	using Microsoft.Azure.Functions.Worker.Http;
-	
+	using Microsoft.Azure.Devices.Client;
+	using Microsoft.Extensions.Configuration;
 	using Microsoft.Extensions.Logging;
 
 	public partial class Integration
 	{
-		[Function("Ack")]
-		public static async Task<HttpResponseData> Ack([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req, FunctionContext executionContext)
+		private readonly IConfiguration _configuration;
+		private readonly ILogger _logger;
+
+		private static readonly ConcurrentDictionary<string, DeviceClient> _DeviceClients = new ConcurrentDictionary<string, DeviceClient>();
+
+		public Integration( IConfiguration configuration,ILogger<Integration> logger)
 		{
-			var logger = executionContext.GetLogger("Ack");
-			logger.LogInformation("Ack function processed a request.");
-
-			var response = req.CreateResponse(HttpStatusCode.OK);
-			response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
-
-			return response;
+			_configuration = configuration;
+			_logger = logger;
 		}
 	}
 }

@@ -1,4 +1,5 @@
-// Copyright (c) October 2021, devMobile Software
+﻿//---------------------------------------------------------------------------------
+// Copyright (c) December 2020, devMobile Software
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,21 +14,15 @@
 // limitations under the License.
 //
 //---------------------------------------------------------------------------------
-namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration
+namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
-	using System.Collections.Concurrent;
+   using System;
 
-	using Microsoft.Azure.Devices.Client;
-	using Microsoft.Extensions.Configuration;
+   public static class Constants
+   {
+      public const byte PortNumberMinimum = 1;
+      public const byte PortNumberMaximum = 223;
 
-	public partial class Webhooks
-	{
-		private readonly IConfiguration _configuration;
-		private static readonly ConcurrentDictionary<string, DeviceClient> _DeviceClients = new ConcurrentDictionary<string, DeviceClient>();
-
-		public Webhooks( IConfiguration configuration)
-		{
-			_configuration = configuration;
-		}
-	}
+      public static string AzureCorrelationPrefix = "az:LockToken:";
+   }
 }

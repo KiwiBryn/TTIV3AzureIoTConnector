@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 //---------------------------------------------------------------------------------
-namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration
+namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
 	using System.Net;
 	using System.Threading.Tasks;
@@ -23,7 +23,7 @@ namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration
 
 	using Microsoft.Extensions.Logging;
 
-	public partial class Webhooks
+	public partial class Integration
 	{
 		[Function("Nack")]
 		public static async Task<HttpResponseData> Nack([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req, FunctionContext executionContext)

@@ -1,4 +1,5 @@
-// Copyright (c) October 2021, devMobile Software
+﻿//---------------------------------------------------------------------------------
+// Copyright (c) November 2020, devMobile Software
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,24 +14,12 @@
 // limitations under the License.
 //
 //---------------------------------------------------------------------------------
-namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
+namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub.Models
 {
-	using Microsoft.Extensions.Configuration;
-	using Microsoft.Extensions.Hosting;
-
-	public class Program
-	{
-		public static void Main()
-		{
-			var host = new HostBuilder()
-						.ConfigureAppConfiguration(e =>
-							e.AddEnvironmentVariables()
-						  .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true).AddEnvironmentVariables().Build()
-					 )
-				 .ConfigureFunctionsWorkerDefaults()
-				 .Build();
-
-			host.Run();
-		}
-	}
+   public class AzureIoTHubReceiveMessageHandlerContext
+   {
+      public string TenantId { get; set; }
+      public string DeviceId { get; set; }
+      public string ApplicationId { get; set; }
+   }
 }

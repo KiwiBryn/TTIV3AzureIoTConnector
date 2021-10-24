@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 //---------------------------------------------------------------------------------
-namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration
+namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
 	using System;
 	using System.Globalization;
@@ -32,7 +32,7 @@ namespace devMobile.IoT.TheThingsIndustries.WebHookAzureIoTHubIntegration
 	using Newtonsoft.Json;
 	using Newtonsoft.Json.Linq;
 
-	public partial class Webhooks
+	public partial class Integration
 	{
 		[Function("Uplink")]
 		public async Task<HttpResponseData> Uplink([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
