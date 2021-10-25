@@ -32,17 +32,15 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	public partial class Integration
 	{
 		[Function("Queued")]
-		public static async Task<HttpResponseData> Queued([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req, FunctionContext executionContext)
+		public async Task<HttpResponseData> Queued([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req)
 		{
-			var logger = executionContext.GetLogger("Queued");
-
-			// Wrap all the processing in a try\catch so if anything blows up we have logged it. Will need to specialise for connectivity failues etc.
+			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
 			try
 			{
-				Models.DownlinkAckPayload payload = JsonConvert.DeserializeObject<Models.DownlinkAckPayload>(await req.ReadAsStringAsync());
+				Models.DownlinkQueuedPayload payload = JsonConvert.DeserializeObject<Models.DownlinkQueuedPayload>(await req.ReadAsStringAsync());
 				if (payload == null)
 				{
-					logger.LogInformation("Queued: Payload {0} invalid", await req.ReadAsStringAsync());
+					_logger.LogInformation("Queued: Payload {0} invalid", await req.ReadAsStringAsync());
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
@@ -50,38 +48,42 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				string applicationId = payload.EndDeviceIds.ApplicationIds.ApplicationId;
 				string deviceId = payload.EndDeviceIds.DeviceId;
 
-				logger.LogInformation("Queued-ApplicationID:{0} DeviceID:{1} ", applicationId, deviceId);
+				_logger.LogInformation("Queued-ApplicationID:{0} DeviceID:{1} ", applicationId, deviceId);
 
 				if (!_DeviceClients.TryGetValue(deviceId, out DeviceClient deviceClient))
 				{
-					logger.LogInformation("Queued-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
+					_logger.LogInformation("Queued-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
 
-				if (!AzureLockToken.TryGet(payload.CorrelationIds, out string lockToken))
+				// If the message is not confirmed "complete" it as soon as with network
+				if (!payload.DownlinkQueued.Confirmed)
 				{
-					logger.LogWarning("Queued-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, req.ReadAsStringAsync());
+					if (!AzureLockToken.TryGet(payload.CorrelationIds, out string lockToken))
+					{
+						_logger.LogWarning("Queued-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, req.ReadAsStringAsync());
 
-					return req.CreateResponse(HttpStatusCode.Conflict);
+						return req.CreateResponse(HttpStatusCode.Conflict);
+					}
+
+					try
+					{
+						await deviceClient.CompleteAsync(lockToken);
+					}
+					catch (DeviceMessageLockLostException)
+					{
+						_logger.LogWarning("Queued-CompleteAsync DeviceID:{0} LockToken:{1} timeout", payload.EndDeviceIds.DeviceId, lockToken);
+
+						return req.CreateResponse(HttpStatusCode.Conflict);
+					}
+
+					_logger.LogInformation("Queued-Device{0} LockToken:{1} success", payload.EndDeviceIds.DeviceId, lockToken);
 				}
-
-				try
-				{
-					await deviceClient.CompleteAsync(lockToken);
-				}
-				catch (DeviceMessageLockLostException)
-				{
-					logger.LogWarning("Queued-CompleteAsync DeviceID:{0} LockToken:{1} timeout", payload.EndDeviceIds.DeviceId, lockToken);
-
-					return req.CreateResponse(HttpStatusCode.Conflict);
-				}
-
-				logger.LogInformation("Queued-Device{0} LockToken:{1} success", payload.EndDeviceIds.DeviceId, lockToken);
 			}
 			catch (Exception ex)
 			{
-				logger.LogError(ex, "Queued message processing failed");
+				_logger.LogError(ex, "Queued message processing failed");
 
 				return req.CreateResponse(HttpStatusCode.InternalServerError);
 			}
