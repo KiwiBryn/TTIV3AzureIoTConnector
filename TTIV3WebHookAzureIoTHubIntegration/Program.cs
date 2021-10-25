@@ -28,12 +28,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 							e.AddEnvironmentVariables()
 						  .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true).AddEnvironmentVariables().Build()
 					 )
-				.ConfigureLogging(logging =>
-				{
-					logging.AddApplicationInsights();
-					logging.ClearProviders();
-					logging.AddSimpleConsole(c => c.TimestampFormat = "[HH:mm:ss]");
-				})
 				 .ConfigureFunctionsWorkerDefaults()
 				 .Build();
 
