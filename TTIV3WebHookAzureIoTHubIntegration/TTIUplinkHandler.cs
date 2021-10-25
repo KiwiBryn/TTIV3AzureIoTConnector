@@ -23,6 +23,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 	using Microsoft.Azure.Devices.Client;
 	using Microsoft.Azure.Devices.Client.Exceptions;
+
 	using Microsoft.Azure.Functions.Worker;
 	using Microsoft.Azure.Functions.Worker.Http;
 
