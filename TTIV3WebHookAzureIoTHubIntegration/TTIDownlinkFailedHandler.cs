@@ -36,10 +36,12 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
 			try
 			{
-				Models.DownlinkFailedPayload payload = JsonConvert.DeserializeObject<Models.DownlinkFailedPayload>(await req.ReadAsStringAsync());
+				string payloadText = await req.ReadAsStringAsync();
+
+				Models.DownlinkFailedPayload payload = JsonConvert.DeserializeObject<Models.DownlinkFailedPayload>(payloadText);
 				if (payload == null)
 				{
-					_logger.LogInformation("Failed: Payload {0} invalid", await req.ReadAsStringAsync());
+					_logger.LogInformation("Failed: Payload {0} invalid", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
@@ -58,7 +60,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 				if (!AzureLockToken.TryGet(payload.CorrelationIds, out string lockToken))
 				{
-					_logger.LogWarning("Failed-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, req.ReadAsStringAsync());
+					_logger.LogWarning("Failed-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, payloadText);
 
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
