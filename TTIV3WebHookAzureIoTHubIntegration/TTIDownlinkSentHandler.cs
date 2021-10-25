@@ -19,6 +19,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	using System.Net;
 	using System.Threading.Tasks;
 	using Microsoft.Azure.Devices.Client;
+	using Microsoft.Azure.Devices.Client.Exceptions;
 	using Microsoft.Azure.Functions.Worker;
 	using Microsoft.Azure.Functions.Worker.Http;
 
@@ -38,7 +39,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				Models.DownlinkSentPayload payload = JsonConvert.DeserializeObject<Models.DownlinkSentPayload>(payloadText);
 				if (payload == null)
 				{
-					_logger.LogInformation("Sent: Payload {0} invalid", payloadText);
+					_logger.LogInformation("Sent-Payload {0} invalid", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
@@ -55,27 +56,25 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
 
-				if (!AzureLockToken.TryGet(payload.CorrelationIds, out string lockToken))
+				if (!AzureLockToken.TryGet(payload.DownlinkSent.CorrelationIds, out string lockToken))
 				{
 					_logger.LogWarning("Sent-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, payloadText);
 
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
 				
-				/*
 				try
 				{
 					await deviceClient.CompleteAsync(lockToken);
 				}
 				catch (DeviceMessageLockLostException)
 				{
-					logger.LogWarning("Sent-RejectAsync DeviceID:{0} LockToken:{1} timeout", payload.EndDeviceIds.DeviceId, lockToken);
+					_logger.LogWarning("Sent-RejectAsync DeviceID:{0} LockToken:{1} timeout", payload.EndDeviceIds.DeviceId, lockToken);
 
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
-				*/
 
-				_logger.LogInformation("Sent-Device{0} LockToken:{1} success", payload.EndDeviceIds.DeviceId, lockToken);
+				_logger.LogInformation("Sent-DeviceID:{0} LockToken:{1} success", payload.EndDeviceIds.DeviceId, lockToken);
 			}
 			catch (Exception ex)
 			{

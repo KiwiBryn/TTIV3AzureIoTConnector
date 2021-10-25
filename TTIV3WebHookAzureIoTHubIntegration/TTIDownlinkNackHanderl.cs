@@ -41,7 +41,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				Models.DownlinkNackPayload payload = JsonConvert.DeserializeObject<Models.DownlinkNackPayload>(payloadText);
 				if (payload == null)
 				{
-					_logger.LogInformation("Nack: Payload {0} invalid", payloadText);
+					_logger.LogInformation("Nack-Payload {0} invalid", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
@@ -58,7 +58,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
 
-				if (!AzureLockToken.TryGet(payload.CorrelationIds, out string lockToken))
+				if (!AzureLockToken.TryGet(payload.DownlinkNack.CorrelationIds, out string lockToken))
 				{
 					_logger.LogWarning("Nack-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, payloadText);
 
@@ -76,7 +76,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
 
-				_logger.LogInformation("Nack-Device{0} LockToken:{1} success", payload.EndDeviceIds.DeviceId, lockToken);
+				_logger.LogInformation("Nack-DeviceID:{0} LockToken:{1} success", payload.EndDeviceIds.DeviceId, lockToken);
 			}
 			catch (Exception ex)
 			{

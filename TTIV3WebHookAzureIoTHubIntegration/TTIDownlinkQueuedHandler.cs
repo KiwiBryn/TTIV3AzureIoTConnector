@@ -42,7 +42,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				Models.DownlinkQueuedPayload payload = JsonConvert.DeserializeObject<Models.DownlinkQueuedPayload>(payloadText);
 				if (payload == null)
 				{
-					_logger.LogInformation("Queued: Payload {0} invalid", payloadText);
+					_logger.LogInformation("Queued-Payload {0} invalid", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
@@ -62,7 +62,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				// If the message is not confirmed "complete" it as soon as with network
 				if (!payload.DownlinkQueued.Confirmed)
 				{
-					if (!AzureLockToken.TryGet(payload.CorrelationIds, out string lockToken))
+					if (!AzureLockToken.TryGet(payload.DownlinkQueued.CorrelationIds, out string lockToken))
 					{
 						_logger.LogWarning("Queued-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, payloadText);
 
@@ -80,7 +80,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						return req.CreateResponse(HttpStatusCode.Conflict);
 					}
 
-					_logger.LogInformation("Queued-Device{0} LockToken:{1} success", payload.EndDeviceIds.DeviceId, lockToken);
+					_logger.LogInformation("Queued-DeviceID:{0} LockToken:{1} success", payload.EndDeviceIds.DeviceId, lockToken);
 				}
 			}
 			catch (Exception ex)
