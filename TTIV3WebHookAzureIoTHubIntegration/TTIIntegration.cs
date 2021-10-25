@@ -25,7 +25,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	public partial class Integration
 	{
 		private readonly IConfiguration _configuration;
-		private readonly ILogger _logger;
+		private readonly ILogger<Integration> _logger;
 
 		private static readonly ConcurrentDictionary<string, DeviceClient> _DeviceClients = new ConcurrentDictionary<string, DeviceClient>();
 
