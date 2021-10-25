@@ -21,49 +21,46 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub.Models
 
 	using Newtonsoft.Json;
 	using Newtonsoft.Json.Converters;
-	using Newtonsoft.Json.Linq;
 
-	namespace devMobile.IoT.TheThingsIndustries.AzureIoTHubWebhook.Model
+	public class DownlinkSent
 	{
-		public class DownlinkSent
-		{
-			[JsonProperty("session_key_id")]
-			public string SessionKeyId { get; set; }
+		[JsonProperty("session_key_id")]
+		public string SessionKeyId { get; set; }
 
-			[JsonProperty("f_port")]
-			public int Port { get; set; }
+		[JsonProperty("f_port")]
+		public int Port { get; set; }
 
-			[JsonProperty("f_cnt")]
-			public int Count { get; set; }
+		[JsonProperty("f_cnt")]
+		public int Count { get; set; }
 
-			[JsonProperty("frm_payload")]
-			public string PayloadRaw { get; set; }
+		[JsonProperty("frm_payload")]
+		public string PayloadRaw { get; set; }
 
-			[JsonProperty("decoded_payload")]
-			public JToken PayloadDecoded { get; set; }
+		[JsonProperty("decoded_payload")]
+		public JToken PayloadDecoded { get; set; }
 
-			[JsonProperty("priority")]
-			[JsonConverter(typeof(StringEnumConverter))]
-			public DownlinkPriority Priority { get; set; }
+		[JsonProperty("priority")]
+		[JsonConverter(typeof(StringEnumConverter))]
+		public DownlinkPriority Priority { get; set; }
 
-			[JsonProperty("correlation_ids")]
-			public List<string> CorrelationIds { get; set; }
-		}
+		[JsonProperty("correlation_ids")]
+		public List<string> CorrelationIds { get; set; }
+	}
 
-		public class DownlinkSentPayload
-		{
-			[JsonProperty("end_device_ids")]
-			public EndDeviceIds EndDeviceIds { get; set; }
+	public class DownlinkSentPayload
+	{
+		[JsonProperty("end_device_ids")]
+		public EndDeviceIds EndDeviceIds { get; set; }
 
-			[JsonProperty("correlation_ids")]
-			public List<string> CorrelationIds { get; set; }
+		[JsonProperty("correlation_ids")]
+		public List<string> CorrelationIds { get; set; }
 
-			[JsonProperty("received_at")]
-			public DateTime ReceivedAtUtc { get; set; }
+		[JsonProperty("received_at")]
+		public DateTime ReceivedAtUtc { get; set; }
 
-			[JsonProperty("downlink_sent")]
-			public DownlinkSent DownlinkSent { get; set; }
-		}
+		[JsonProperty("downlink_sent")]
+		public DownlinkSent DownlinkSent { get; set; }
 	}
 }
+
 

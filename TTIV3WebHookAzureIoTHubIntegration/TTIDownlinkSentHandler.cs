@@ -28,17 +28,15 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	public partial class Integration
 	{
 		[Function("Sent")]
-		public static async Task<HttpResponseData> Sent([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req, FunctionContext executionContext)
+		public async Task<HttpResponseData> Sent([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req)
 		{
-			var logger = executionContext.GetLogger("Sent");
-
-			// Wrap all the processing in a try\catch so if anything blows up we have logged it. Will need to specialise for connectivity failues etc.
+			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
 			try
 			{
-				Models.DownlinkAckPayload payload = JsonConvert.DeserializeObject<Models.DownlinkAckPayload>(await req.ReadAsStringAsync());
+				Models.DownlinkSentPayload payload = JsonConvert.DeserializeObject<Models.DownlinkSentPayload>(await req.ReadAsStringAsync());
 				if (payload == null)
 				{
-					logger.LogInformation("Sent: Payload {0} invalid", await req.ReadAsStringAsync());
+					_logger.LogInformation("Sent: Payload {0} invalid", await req.ReadAsStringAsync());
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
@@ -46,26 +44,26 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				string applicationId = payload.EndDeviceIds.ApplicationIds.ApplicationId;
 				string deviceId = payload.EndDeviceIds.DeviceId;
 
-				logger.LogInformation("Sent-ApplicationID:{0} DeviceID:{1} ", applicationId, deviceId);
+				_logger.LogInformation("Sent-ApplicationID:{0} DeviceID:{1} ", applicationId, deviceId);
 
 				if (!_DeviceClients.TryGetValue(deviceId, out DeviceClient deviceClient))
 				{
-					logger.LogInformation("Sent-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
+					_logger.LogInformation("Sent-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
 
 				if (!AzureLockToken.TryGet(payload.CorrelationIds, out string lockToken))
 				{
-					logger.LogWarning("Sent-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, req.ReadAsStringAsync());
+					_logger.LogWarning("Sent-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, req.ReadAsStringAsync());
 
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
-
+				
 				/*
 				try
 				{
-					await deviceClient.RejectAsync(lockToken);
+					await deviceClient.CompleteAsync(lockToken);
 				}
 				catch (DeviceMessageLockLostException)
 				{
@@ -75,11 +73,11 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				}
 				*/
 
-				logger.LogInformation("Sent-Device{0} LockToken:{1} success", payload.EndDeviceIds.DeviceId, lockToken);
+				_logger.LogInformation("Sent-Device{0} LockToken:{1} success", payload.EndDeviceIds.DeviceId, lockToken);
 			}
 			catch (Exception ex)
 			{
-				logger.LogError(ex, "Sent message processing failed");
+				_logger.LogError(ex, "Sent message processing failed");
 
 				return req.CreateResponse(HttpStatusCode.InternalServerError);
 			}
