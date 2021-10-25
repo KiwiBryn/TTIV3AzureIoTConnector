@@ -21,6 +21,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub.Models
 
 	using Newtonsoft.Json;
 	using Newtonsoft.Json.Converters;
+	using Newtonsoft.Json.Linq;
 
 	public class DownlinkSent
 	{
