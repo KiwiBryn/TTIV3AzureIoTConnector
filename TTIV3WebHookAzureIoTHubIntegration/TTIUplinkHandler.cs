@@ -128,6 +128,8 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					ioTHubmessage.Properties.Add("port", port.ToString());
 
 					await deviceClient.SendEventAsync(ioTHubmessage);
+
+					_logger.LogInformation("Queued-DeviceID:{0} MessageID:{1} success", payload.EndDeviceIds.DeviceId, ioTHubmessage.MessageId);
 				}
 			}
 			catch (Exception ex)
