@@ -74,7 +74,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					{
 						_logger.LogWarning("Downlink-Queue value is invalid");
 
-						await deviceClient.RejectAsync(message);
+						await deviceClient.RejectAsync(message.LockToken);
 						return;
 					}
 
@@ -134,14 +134,16 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						{
 							try
 							{
-								await deviceClient.CompleteAsync(message);
+								await deviceClient.CompleteAsync(message.LockToken);
 							}
 							catch (DeviceMessageLockLostException)
 							{
-								_logger.LogWarning("Downlink-CompleteAsync DeviceID:{0} LockToken:{1} timeout", receiveMessageHandlerConext.DeviceId, message.MessageId);
+								_logger.LogWarning("Downlink-CompleteAsync DeviceID:{0} MessageID:{1} LockToken:{2} timeout", receiveMessageHandlerConext.DeviceId, message.MessageId, message.LockToken);
 							}
 						}
 					}
+
+					_logger.LogInformation("Downlink-DeviceID:{0} LockToken:{1} success", receiveMessageHandlerConext.DeviceId, message.LockToken);
 				}
 			}
 			catch (Exception ex)
