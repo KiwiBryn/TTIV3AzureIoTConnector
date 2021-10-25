@@ -1,5 +1,5 @@
 ﻿//---------------------------------------------------------------------------------
-// Copyright (c) February 2021, devMobile Software
+// Copyright (c) October 2021, devMobile Software
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub.Models
    using Newtonsoft.Json.Converters;
    using Newtonsoft.Json.Linq;
 
-   // Production version of classes for unpacking HTTP payload https://json2csharp.com/
-   // In inital version from https://www.thethingsindustries.com/docs/reference/data-formats/
    public class Downlink
    {
       [JsonProperty("f_port")]
