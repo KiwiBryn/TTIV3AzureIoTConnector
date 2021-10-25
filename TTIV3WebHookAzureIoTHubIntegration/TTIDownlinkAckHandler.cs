@@ -36,10 +36,12 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
 			try
 			{
-				Models.DownlinkAckPayload payload = JsonConvert.DeserializeObject<Models.DownlinkAckPayload>(await req.ReadAsStringAsync());
+				string payloadText = await req.ReadAsStringAsync();
+
+				Models.DownlinkAckPayload payload = JsonConvert.DeserializeObject<Models.DownlinkAckPayload>(payloadText);
 				if (payload == null)
 				{
-					_logger.LogInformation("Ack: Payload {0} invalid", await req.ReadAsStringAsync());
+					_logger.LogInformation("Ack: Payload {0} invalid", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
@@ -58,7 +60,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 				if (!AzureLockToken.TryGet(payload.CorrelationIds, out string lockToken))
 				{
-					_logger.LogWarning("Ack-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, req.ReadAsStringAsync());
+					_logger.LogWarning("Ack-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, payloadText);
 
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
@@ -69,7 +71,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				}
 				catch (DeviceMessageLockLostException)
 				{
-					_logger.LogWarning("Ack-RejectAsync DeviceID:{0} LockToken:{1} timeout", payload.EndDeviceIds.DeviceId, lockToken);
+					_logger.LogWarning("Ack-CompleteAsync DeviceID:{0} LockToken:{1} timeout", payload.EndDeviceIds.DeviceId, lockToken);
 
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
