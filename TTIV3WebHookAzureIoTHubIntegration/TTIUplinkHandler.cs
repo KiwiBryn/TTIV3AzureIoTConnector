@@ -129,7 +129,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 					await deviceClient.SendEventAsync(ioTHubmessage);
 
-					_logger.LogInformation("Queued-DeviceID:{0} MessageID:{1} success", payload.EndDeviceIds.DeviceId, ioTHubmessage.MessageId);
+					_logger.LogInformation("Uplink-DeviceID:{0} SendEventAsync success", payload.EndDeviceIds.DeviceId);
 				}
 			}
 			catch (Exception ex)
