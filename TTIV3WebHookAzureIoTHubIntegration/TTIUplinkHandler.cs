@@ -41,10 +41,12 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
 			try
 			{
-				Models.PayloadUplink payload = JsonConvert.DeserializeObject<Models.PayloadUplink>(await req.ReadAsStringAsync());
+				string payloadText = await req.ReadAsStringAsync();
+
+				Models.PayloadUplink payload = JsonConvert.DeserializeObject<Models.PayloadUplink>(payloadText);
 				if (payload == null)
 				{
-					_logger.LogInformation("Uplink-Payload {0} invalid", await req.ReadAsStringAsync());
+					_logger.LogInformation("Uplink-Payload {0} invalid", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
