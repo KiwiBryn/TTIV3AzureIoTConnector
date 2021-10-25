@@ -36,17 +36,15 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	public partial class Integration
 	{
 		[Function("Uplink")]
-		public async Task<HttpResponseData> Uplink([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
+		public async Task<HttpResponseData> Uplink([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
 		{
-			var logger = executionContext.GetLogger("Uplink");
-
-			// Wrap all the processing in a try\catch so if anything blows up we have logged it. Will need to specialise for connectivity failues etc.
+			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
 			try
 			{
 				Models.PayloadUplink payload = JsonConvert.DeserializeObject<Models.PayloadUplink>(await req.ReadAsStringAsync());
 				if (payload == null)
 				{
-					logger.LogInformation("Uplink: Payload {0} invalid", await req.ReadAsStringAsync());
+					_logger.LogInformation("Uplink-Payload {0} invalid", await req.ReadAsStringAsync());
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
@@ -56,18 +54,18 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 				if ((payload.UplinkMessage.Port == null ) || (!payload.UplinkMessage.Port.HasValue) || (payload.UplinkMessage.Port.Value == 0))
 				{
-					logger.LogInformation("Uplink-ApplicationID:{0} DeviceID:{1} Payload Raw:{2} Control message", applicationId, deviceId, payload.UplinkMessage.PayloadRaw);
+					_logger.LogInformation("Uplink-ApplicationID:{0} DeviceID:{1} Payload Raw:{2} Control message", applicationId, deviceId, payload.UplinkMessage.PayloadRaw);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
 
 				int port = payload.UplinkMessage.Port.Value;
 
-				logger.LogInformation("Uplink-ApplicationID:{0} DeviceID:{1} Port:{2} Payload Raw:{3}", applicationId, deviceId, port, payload.UplinkMessage.PayloadRaw);
+				_logger.LogInformation("Uplink-ApplicationID:{0} DeviceID:{1} Port:{2} Payload Raw:{3}", applicationId, deviceId, port, payload.UplinkMessage.PayloadRaw);
 
 				if (!_DeviceClients.TryGetValue(deviceId, out DeviceClient deviceClient))
 				{
-					logger.LogInformation("Uplink-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
+					_logger.LogInformation("Uplink-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 
 					deviceClient = DeviceClient.CreateFromConnectionString(_configuration.GetConnectionString("AzureIoTHub"), deviceId);
 
@@ -77,14 +75,14 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					}
 					catch (DeviceNotFoundException)
 					{
-						logger.LogWarning("Uplink-Unknown DeviceID:{0}", deviceId);
+						_logger.LogWarning("Uplink-Unknown DeviceID:{0}", deviceId);
 
 						return req.CreateResponse(HttpStatusCode.NotFound);
 					}
 
 					if (!_DeviceClients.TryAdd(deviceId, deviceClient))
 					{
-						logger.LogWarning("Uplink-TryAdd failed for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
+						_logger.LogWarning("Uplink-TryAdd failed for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 
 						return req.CreateResponse(HttpStatusCode.Conflict);
 					}
@@ -132,7 +130,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			}
 			catch (Exception ex)
 			{
-				logger.LogError(ex, "Uplink message processing failed");
+				_logger.LogError(ex, "Uplink-Message processing failed");
 
 				return req.CreateResponse(HttpStatusCode.InternalServerError);
 			}
