@@ -69,7 +69,17 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				{
 					_logger.LogInformation("Uplink-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 
-					deviceClient = DeviceClient.CreateFromConnectionString(_configuration.GetConnectionString("AzureIoTHub"), deviceId);
+					deviceClient = DeviceClient.CreateFromConnectionString(_configuration.GetConnectionString("AzureIoTHub"), deviceId, 
+						new ITransportSettings[]
+						{
+							new AmqpTransportSettings(TransportType.Amqp_Tcp_Only)
+							{
+								AmqpConnectionPoolSettings = new AmqpConnectionPoolSettings()
+								{
+									Pooling = true,
+								}
+							}
+						});
 
 					try
 					{
