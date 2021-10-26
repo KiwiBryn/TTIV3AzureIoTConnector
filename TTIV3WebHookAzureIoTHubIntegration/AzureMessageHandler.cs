@@ -129,18 +129,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						client.Headers.Add("Authorization", $"Bearer {receiveMessageHandlerConext.ApiKey}");
 
 						client.UploadString(new Uri(url), JsonConvert.SerializeObject(Payload));
-
-						if (!downlink.Confirmed)
-						{
-							try
-							{
-								await deviceClient.CompleteAsync(message.LockToken);
-							}
-							catch (DeviceMessageLockLostException)
-							{
-								_logger.LogWarning("Downlink-CompleteAsync DeviceID:{0} MessageID:{1} LockToken:{2} timeout", receiveMessageHandlerConext.DeviceId, message.MessageId, message.LockToken);
-							}
-						}
 					}
 
 					_logger.LogInformation("Downlink-DeviceID:{0} LockToken:{1} success", receiveMessageHandlerConext.DeviceId, message.LockToken);
