@@ -17,15 +17,16 @@
 // BAMCAQ== 0x04, 0x03, 0x02, 0x01
 //
 // JSON Payloads
-// {"value_0": 0,"value_1": 1,"value_2": 2}
-// {"value_9": 9,"value_8": 1,"value_7": 7}
+// {"value_1": 0,"value_2": 1,"value_3": 5}
+// {"value_2": 0,"value_3": 2,"value_4": 4}
+// {"value_3": 0,"value_4": 3,"value_5": 3}
+// {"value_4": 0,"value_5": 4,"value_1": 2}
+// {"value_5": 0,"value_1": 0,"value_2": 1}
 //
 //---------------------------------------------------------------------------------
 namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
-	using System;
 	using System.Collections.Concurrent;
-	using System.Threading.Tasks;
 	using Microsoft.Azure.Devices.Client;
 	using Microsoft.Extensions.Configuration;
 	using Microsoft.Extensions.Logging;
