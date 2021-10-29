@@ -34,11 +34,11 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		{
 			try
 			{
-				Models.AzureIoTHubReceiveMessageHandlerContext receiveMessageHandlerConext = (Models.AzureIoTHubReceiveMessageHandlerContext)userContext;
+				Models.AzureIoTHubReceiveMessageHandlerContext receiveMessageHandlerContext = (Models.AzureIoTHubReceiveMessageHandlerContext)userContext;
 
-				if (!_DeviceClients.TryGetValue(receiveMessageHandlerConext.DeviceId, out DeviceClient deviceClient))
+				if (!_DeviceClients.TryGetValue(receiveMessageHandlerContext.DeviceId, out DeviceClient deviceClient))
 				{
-					_logger.LogWarning("Downlink-DeviceID:{0} unknown", receiveMessageHandlerConext.DeviceId);
+					_logger.LogWarning("Downlink-DeviceID:{0} unknown", receiveMessageHandlerContext.DeviceId);
 					return;
 				}
 
@@ -106,7 +106,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					}
 
 					_logger.LogInformation("Downlink-IoT Hub DeviceID:{0} MessageID:{2} LockToken:{3} Port:{4} Confirmed:{5} Priority:{6} Queue:{7}",
-						receiveMessageHandlerConext.DeviceId,
+						receiveMessageHandlerContext.DeviceId,
 						message.MessageId,
 						message.LockToken,
 						downlink.Port,
@@ -122,16 +122,16 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						}
 					};
 
-					string url = $"{receiveMessageHandlerConext.WebhookBaseURL}/{receiveMessageHandlerConext.ApplicationId}/webhooks/{receiveMessageHandlerConext.WebhookId}/devices/{receiveMessageHandlerConext.DeviceId}/down/{queue}".ToLower();
+					string url = $"{receiveMessageHandlerContext.WebhookBaseURL}/{receiveMessageHandlerContext.ApplicationId}/webhooks/{receiveMessageHandlerContext.WebhookId}/devices/{receiveMessageHandlerContext.DeviceId}/down/{queue}".ToLower();
 
 					using (var client = new WebClient())
 					{
-						client.Headers.Add("Authorization", $"Bearer {receiveMessageHandlerConext.ApiKey}");
+						client.Headers.Add("Authorization", $"Bearer {receiveMessageHandlerContext.ApiKey}");
 
 						client.UploadString(new Uri(url), JsonConvert.SerializeObject(Payload));
 					}
 
-					_logger.LogInformation("Downlink-DeviceID:{0} LockToken:{1} success", receiveMessageHandlerConext.DeviceId, message.LockToken);
+					_logger.LogInformation("Downlink-DeviceID:{0} LockToken:{1} success", receiveMessageHandlerContext.DeviceId, message.LockToken);
 				}
 			}
 			catch (Exception ex)
