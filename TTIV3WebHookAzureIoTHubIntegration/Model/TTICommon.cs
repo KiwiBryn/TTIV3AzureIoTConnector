@@ -16,7 +16,7 @@
 //---------------------------------------------------------------------------------
 namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub.Models
 {
-   using System.Runtime.Serialization;
+	using System.Runtime.Serialization;
 
    using Newtonsoft.Json;
 	using Newtonsoft.Json.Converters;
@@ -45,6 +45,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub.Models
       public string DeviceAddress { get; set; }
    }
 
+   // https://www.thethingsindustries.com/docs/reference/api/application_server/#enum:TxSchedulePriority
    [JsonConverter(typeof(StringEnumConverter))]
    public enum DownlinkPriority
    {
