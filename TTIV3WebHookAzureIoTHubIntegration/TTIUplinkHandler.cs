@@ -120,6 +120,8 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					{ "ApplicationID", applicationId },
 					{ "DeviceID", deviceId },
 					{ "Port", port },
+					{ "Simulated", payload.Simulated },
+					{ "ReceivedAtUtc", payload.UplinkMessage.ReceivedAtUtc.ToString("s", CultureInfo.InvariantCulture) },
 					{ "PayloadRaw", payload.UplinkMessage.PayloadRaw }
 				};
 
@@ -138,6 +140,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					ioTHubmessage.Properties.Add("DeviceEUI", payload.EndDeviceIds.DeviceEui);
 					ioTHubmessage.Properties.Add("DeviceId", deviceId);
 					ioTHubmessage.Properties.Add("port", port.ToString());
+					ioTHubmessage.Properties.Add("Simulated", payload.Simulated.ToString());
 
 					await deviceClient.SendEventAsync(ioTHubmessage);
 

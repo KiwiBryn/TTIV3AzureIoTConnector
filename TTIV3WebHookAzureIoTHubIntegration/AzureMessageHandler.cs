@@ -22,7 +22,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	using System.Threading.Tasks;
 
 	using Microsoft.Azure.Devices.Client;
-	using Microsoft.Azure.Devices.Client.Exceptions;
 	using Microsoft.Extensions.Logging;
 
 	using Newtonsoft.Json;
