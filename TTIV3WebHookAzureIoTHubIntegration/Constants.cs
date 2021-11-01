@@ -23,6 +23,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
       public const byte PortNumberMinimum = 1;
       public const byte PortNumberMaximum = 223;
 
-      public static string AzureCorrelationPrefix = "az:LockToken:";
+      public const string AzureCorrelationPrefix = "az:LockToken:";
    }
 }
