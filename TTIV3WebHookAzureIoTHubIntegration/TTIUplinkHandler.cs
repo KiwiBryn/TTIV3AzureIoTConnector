@@ -18,12 +18,15 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	using System;
 	using System.Globalization;
 	using System.Net;
+	using System.Security.Cryptography;
 	using System.Text;
 	using System.Threading.Tasks;
 
 	using Microsoft.Azure.Devices.Client;
 	using Microsoft.Azure.Devices.Client.Exceptions;
-
+	using Microsoft.Azure.Devices.Provisioning.Client;
+	using Microsoft.Azure.Devices.Provisioning.Client.Transport;
+	using Microsoft.Azure.Devices.Shared;
 	using Microsoft.Azure.Functions.Worker;
 	using Microsoft.Azure.Functions.Worker.Http;
 
@@ -81,17 +84,82 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				{
 					logger.LogInformation("Uplink-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 
-					deviceClient = DeviceClient.CreateFromConnectionString(_azureSettings.IoTHubConnectionString, deviceId, transportSettings);
-
-					try
+					// Check that only one of Azure Connection string or DPS is configured
+					if (string.IsNullOrEmpty(_azureSettings.IoTHubConnectionString) && (_azureSettings.DeviceProvisioningServiceSettings == null))
 					{
-						await deviceClient.OpenAsync();
+						logger.LogError("Uplink-Neither Azure IoT Hub connection string or Device Provisiong Service configured");
+
+						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 					}
-					catch (DeviceNotFoundException)
-					{
-						logger.LogWarning("Uplink-Unknown DeviceID:{0}", deviceId);
 
-						return req.CreateResponse(HttpStatusCode.NotFound);
+					// Check that only one of Azure Connection string or DPS is configured
+					if (!string.IsNullOrEmpty(_azureSettings.IoTHubConnectionString) && (_azureSettings.DeviceProvisioningServiceSettings != null))
+					{
+						logger.LogError("Uplink-Both Azure IoT Hub connection string and Device Provisioning Service configured");
+
+						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
+					}
+
+					// User Azure IoT Connection string if configured and Device Provisioning Service isn't
+					if (!string.IsNullOrEmpty(_azureSettings.IoTHubConnectionString))
+					{
+						deviceClient = DeviceClient.CreateFromConnectionString(_azureSettings.IoTHubConnectionString, deviceId, transportSettings);
+
+						try
+						{
+							await deviceClient.OpenAsync();
+						}
+						catch (DeviceNotFoundException)
+						{
+							logger.LogWarning("Uplink-Unknown DeviceID:{0}", deviceId);
+
+							return req.CreateResponse(HttpStatusCode.NotFound);
+						}
+					}
+
+					// Azure IoT Hub Device provisioning service if configured
+					if (_azureSettings.DeviceProvisioningServiceSettings != null) 
+					{
+						string deviceKey;
+
+						if ( string.IsNullOrEmpty(_azureSettings.DeviceProvisioningServiceSettings.IdScope) || string.IsNullOrEmpty(_azureSettings.DeviceProvisioningServiceSettings.GroupEnrollmentKey))
+						{
+							logger.LogError("Uplink-Device Provisioning Service requires ID Scope and Group Enrollment Key configured");
+
+							return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
+						}
+
+						using (var hmac = new HMACSHA256(Convert.FromBase64String(_azureSettings.DeviceProvisioningServiceSettings.GroupEnrollmentKey)))
+						{
+							deviceKey = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(deviceId)));
+						}
+
+						using (var securityProvider = new SecurityProviderSymmetricKey(deviceId, deviceKey, null))
+						{
+							using (var transport = new ProvisioningTransportHandlerAmqp(TransportFallbackType.TcpOnly))
+							{
+								ProvisioningDeviceClient provClient = ProvisioningDeviceClient.Create(
+									Constants.AzureDpsGlobalDeviceEndpoint,
+									_azureSettings.DeviceProvisioningServiceSettings.IdScope,
+									securityProvider,
+									transport);
+
+								DeviceRegistrationResult result = await provClient.RegisterAsync();
+
+								if (result.Status != ProvisioningRegistrationStatusType.Assigned)
+								{
+									_logger.LogError("Config-DeviceID:{0} Status:{1} RegisterAsync failed ", deviceId, result.Status);
+
+									return req.CreateResponse(HttpStatusCode.FailedDependency);
+								}
+
+								IAuthenticationMethod authentication = new DeviceAuthenticationWithRegistrySymmetricKey(result.DeviceId, (securityProvider as SecurityProviderSymmetricKey).GetPrimaryKey());
+
+								deviceClient = DeviceClient.Create(result.AssignedHub, authentication, transportSettings);
+
+								await deviceClient.OpenAsync();
+							}
+						}
 					}
 
 					if (!_DeviceClients.TryAdd(deviceId, deviceClient))
