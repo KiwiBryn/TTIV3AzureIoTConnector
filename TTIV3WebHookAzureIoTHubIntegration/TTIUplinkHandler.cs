@@ -56,11 +56,11 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				string applicationId = payload.EndDeviceIds.ApplicationIds.ApplicationId;
 				string deviceId = payload.EndDeviceIds.DeviceId;
 
-				if ((payload.UplinkMessage.Port == null ) || (!payload.UplinkMessage.Port.HasValue) || (payload.UplinkMessage.Port.Value == 0))
+				if ((payload.UplinkMessage.Port == null) || (!payload.UplinkMessage.Port.HasValue) || (payload.UplinkMessage.Port.Value == 0))
 				{
 					logger.LogInformation("Uplink-ApplicationID:{0} DeviceID:{1} Payload Raw:{2} Control message", applicationId, deviceId, payload.UplinkMessage.PayloadRaw);
 
-					return req.CreateResponse(HttpStatusCode.BadRequest);
+					return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 				}
 
 				int port = payload.UplinkMessage.Port.Value;
@@ -102,12 +102,12 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					}
 
 					Models.AzureIoTHubReceiveMessageHandlerContext context = new Models.AzureIoTHubReceiveMessageHandlerContext()
-					{ 
+					{
 						DeviceId = deviceId,
 						ApplicationId = applicationId,
 						WebhookId = _theThingsIndustriesSettings.WebhookId,
 						WebhookBaseURL = _theThingsIndustriesSettings.WebhookBaseURL,
-						ApiKey = _theThingsIndustriesSettings.ApiKey 
+						ApiKey = _theThingsIndustriesSettings.ApiKey
 					};
 
 					await deviceClient.SetReceiveMessageHandlerAsync(AzureIoTHubClientReceiveMessageHandler, context);
