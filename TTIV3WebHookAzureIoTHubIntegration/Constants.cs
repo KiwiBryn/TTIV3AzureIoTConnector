@@ -16,13 +16,15 @@
 //---------------------------------------------------------------------------------
 namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
-   using System;
+	using System;
 
-   public static class Constants
-   {
-      public const byte PortNumberMinimum = 1;
-      public const byte PortNumberMaximum = 223;
+	public static class Constants
+	{
+		public const byte PortNumberMinimum = 1;
+		public const byte PortNumberMaximum = 223;
 
-      public const string AzureCorrelationPrefix = "az:LockToken:";
-   }
+		public const string AzureCorrelationPrefix = "az:LockToken:";
+
+		public const string AzureDpsGlobalDeviceEndpoint = "global.azure-devices-provisioning.net";
+	}
 }
