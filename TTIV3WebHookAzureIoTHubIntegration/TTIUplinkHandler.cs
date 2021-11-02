@@ -71,7 +71,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				{
 					logger.LogInformation("Uplink-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 
-					deviceClient = DeviceClient.CreateFromConnectionString(_configuration.GetConnectionString("AzureIoTHub"), deviceId, 
+					deviceClient = DeviceClient.CreateFromConnectionString(_azureSettings.IoTHubConnectionString, deviceId,
 						new ITransportSettings[]
 						{
 							new AmqpTransportSettings(TransportType.Amqp_Tcp_Only)
@@ -105,9 +105,9 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					{ 
 						DeviceId = deviceId,
 						ApplicationId = applicationId,
-						WebhookId = _configuration.GetSection("TheThingsIndustries").GetSection("WebhookId").Value,
-						WebhookBaseURL = _configuration.GetSection("TheThingsIndustries").GetSection("WebhookBaseURL").Value,
-						ApiKey = _configuration.GetSection("TheThingsIndustries").GetSection("APiKey").Value,
+						WebhookId = _theThingsIndustriesSettings.WebhookId,
+						WebhookBaseURL = _theThingsIndustriesSettings.WebhookBaseURL,
+						ApiKey = _theThingsIndustriesSettings.ApiKey 
 					};
 
 					await deviceClient.SetReceiveMessageHandlerAsync(AzureIoTHubClientReceiveMessageHandler, context);
@@ -156,5 +156,134 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 			return req.CreateResponse(HttpStatusCode.OK);
 		}
+		/*
+		private static async Task DeviceRegistration(string applicationId, string deviceId, string modelId, CancellationToken stoppingToken)
+		{
+			DeviceClient deviceClient = null;
+			ITransportSettings[] transportSettings = new ITransportSettings[]
+			{
+				new AmqpTransportSettings(TransportType.Amqp_Tcp_Only)
+				{
+					AmqpConnectionPoolSettings = new AmqpConnectionPoolSettings()
+					{
+						Pooling = true,
+					}
+				 }
+			 };
+
+			try
+			{
+				// See if AzureIoT hub connections string has been configured
+				if (_programSettings.ConnectionStringResolve(applicationId, out string connectionString))
+				{
+					if (!string.IsNullOrEmpty(modelId))
+					{
+						ClientOptions clientoptions = new ClientOptions()
+						{
+							ModelId = modelId
+						};
+						deviceClient = DeviceClient.CreateFromConnectionString(connectionString, deviceId, transportSettings, clientoptions);
+					}
+					else
+					{
+						deviceClient = DeviceClient.CreateFromConnectionString(connectionString, deviceId, transportSettings);
+					}
+				}
+
+				// See if DPS has been configured
+				if (_programSettings.DeviceProvisioningServiceSettingsResolve(applicationId, out AzureDeviceProvisiongServiceSettings deviceProvisiongServiceSettings))
+				{
+					string deviceKey;
+
+					using (var hmac = new HMACSHA256(Convert.FromBase64String(deviceProvisiongServiceSettings.GroupEnrollmentKey)))
+					{
+						deviceKey = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(deviceId)));
+					}
+
+					using (var securityProvider = new SecurityProviderSymmetricKey(deviceId, deviceKey, null))
+					{
+						using (var transport = new ProvisioningTransportHandlerAmqp(TransportFallbackType.TcpOnly))
+						{
+							ProvisioningDeviceClient provClient = ProvisioningDeviceClient.Create(
+								Constants.AzureDpsGlobalDeviceEndpoint,
+								deviceProvisiongServiceSettings.IdScope,
+								securityProvider,
+								transport);
+
+							DeviceRegistrationResult result;
+
+							if (!string.IsNullOrEmpty(modelId))
+							{
+								ProvisioningRegistrationAdditionalData provisioningRegistrationAdditionalData = new ProvisioningRegistrationAdditionalData()
+								{
+									JsonData = PnpConvention.CreateDpsPayload(modelId)
+								};
+
+								result = await provClient.RegisterAsync(provisioningRegistrationAdditionalData, stoppingToken);
+							}
+							else
+							{
+								result = await provClient.RegisterAsync(stoppingToken);
+							}
+
+							if (result.Status != ProvisioningRegistrationStatusType.Assigned)
+							{
+								_logger.LogError("Config-DeviceID:{0} Status:{1} RegisterAsync failed ", deviceId, result.Status);
+
+								return;
+							}
+
+							IAuthenticationMethod authentication = new DeviceAuthenticationWithRegistrySymmetricKey(result.DeviceId, (securityProvider as SecurityProviderSymmetricKey).GetPrimaryKey());
+
+							deviceClient = DeviceClient.Create(result.AssignedHub, authentication, transportSettings);
+						}
+					}
+				}
+
+				if (deviceClient == null)
+				{
+					_logger.LogError("Config-DeviceID:{0} DeviceClient.Create failed ", deviceId);
+
+					return;
+				}
+
+				await deviceClient.OpenAsync(stoppingToken);
+
+				if (!_DeviceClients.TryAdd(deviceId, deviceClient))
+				{
+					// Need to decide whether device cache add failure aborts startup
+					_logger.LogError("Config-Device:{0} cache add failed", deviceId);
+
+					return;
+				}
+
+				AzureIoTHubReceiveMessageHandlerContext context = new AzureIoTHubReceiveMessageHandlerContext()
+				{
+					TenantId = _programSettings.TheThingsIndustries.Tenant,
+					DeviceId = deviceId,
+					ApplicationId = applicationId,
+					MethodSettings = _programSettings.Applications[applicationId].MethodSettings,
+				};
+
+				await deviceClient.SetReceiveMessageHandlerAsync(AzureIoTHubClientReceiveMessageHandler, context, stoppingToken);
+
+				await deviceClient.SetMethodDefaultHandlerAsync(AzureIoTHubClientDefaultMethodHandler, context, stoppingToken);
+			}
+			catch (DeviceNotFoundException)
+			{
+				_logger.LogWarning("Config-Azure Device:{0} device not found connection failed", deviceId);
+
+				return;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Config-Azure Device:{0} connection failed", deviceId);
+
+				return;
+			}
+
+			return;
+		}
+		*/
 	}
 }

@@ -30,18 +30,21 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	using Microsoft.Azure.Devices.Client;
 	using Microsoft.Extensions.Configuration;
 	using Microsoft.Extensions.Logging;
+	using Microsoft.Extensions.Options;
 
 	public partial class Integration
 	{
-		private readonly IConfiguration _configuration;
 		private readonly ILogger<Integration> _logger;
+		private readonly AzureSettings _azureSettings;
+		private readonly TheThingsIndustriesSettings _theThingsIndustriesSettings;
 
 		private static readonly ConcurrentDictionary<string, DeviceClient> _DeviceClients = new ConcurrentDictionary<string, DeviceClient>();
 
-		public Integration( IConfiguration configuration,ILogger<Integration> logger)
+		public Integration(IConfiguration configuration, ILogger<Integration> logger, IOptions<TheThingsIndustriesSettings> theThingsIndustriesSettings, IOptions<AzureSettings> azureSettings)
 		{
-			_configuration = configuration;
 			_logger = logger;
+			_azureSettings = azureSettings.Value;
+			_theThingsIndustriesSettings = theThingsIndustriesSettings.Value;
 		}
 	}
 }

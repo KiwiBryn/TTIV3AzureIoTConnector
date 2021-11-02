@@ -16,8 +16,10 @@
 namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
 	using Microsoft.Extensions.Configuration;
+	using Microsoft.Extensions.DependencyInjection;
 	using Microsoft.Extensions.Hosting;
 	using Microsoft.Extensions.Logging;
+	using Microsoft.Extensions.Options;
 
 	public class Program
 	{
@@ -29,6 +31,13 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						  .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true).AddEnvironmentVariables().Build()
 					 )
 				.ConfigureFunctionsWorkerDefaults()
+				.ConfigureServices((hostContext, services) =>
+				{
+					services.Configure<TheThingsIndustriesSettings>(hostContext.Configuration.GetSection("TheThingsIndustries"))
+						.AddTransient<TheThingsIndustriesSettings>(a => a.GetRequiredService<IOptions<TheThingsIndustriesSettings>>().Value);
+					services.Configure<AzureSettings>(hostContext.Configuration.GetSection("AzureSettings"))
+						.AddTransient<AzureSettings>(a => a.GetRequiredService<IOptions<AzureSettings>>().Value);
+				})
 				.ConfigureLogging(logging =>
 				{
 					logging.ClearProviders();
