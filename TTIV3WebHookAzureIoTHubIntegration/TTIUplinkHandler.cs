@@ -34,6 +34,17 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 	public partial class Integration
 	{
+		private readonly ITransportSettings[] transportSettings = new ITransportSettings[]
+		{
+			new AmqpTransportSettings(TransportType.Amqp_Tcp_Only)
+			{
+				AmqpConnectionPoolSettings = new AmqpConnectionPoolSettings()
+				{
+					Pooling = true,
+				}
+			 }
+		};
+
 		[Function("Uplink")]
 		public async Task<HttpResponseData> Uplink([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
@@ -70,17 +81,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				{
 					logger.LogInformation("Uplink-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 
-					deviceClient = DeviceClient.CreateFromConnectionString(_azureSettings.IoTHubConnectionString, deviceId,
-						new ITransportSettings[]
-						{
-							new AmqpTransportSettings(TransportType.Amqp_Tcp_Only)
-							{
-								AmqpConnectionPoolSettings = new AmqpConnectionPoolSettings()
-								{
-									Pooling = true,
-								}
-							}
-						});
+					deviceClient = DeviceClient.CreateFromConnectionString(_azureSettings.IoTHubConnectionString, deviceId, transportSettings);
 
 					try
 					{
