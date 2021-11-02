@@ -27,7 +27,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	using Microsoft.Azure.Functions.Worker;
 	using Microsoft.Azure.Functions.Worker.Http;
 
-	using Microsoft.Extensions.Configuration;
 	using Microsoft.Extensions.Logging;
 
 	using Newtonsoft.Json;
