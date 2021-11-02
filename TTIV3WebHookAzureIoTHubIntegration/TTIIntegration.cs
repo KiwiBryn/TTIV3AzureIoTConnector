@@ -40,7 +40,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 		private static readonly ConcurrentDictionary<string, DeviceClient> _DeviceClients = new ConcurrentDictionary<string, DeviceClient>();
 
-		public Integration(IConfiguration configuration, ILogger<Integration> logger, IOptions<TheThingsIndustriesSettings> theThingsIndustriesSettings, IOptions<AzureSettings> azureSettings)
+		public Integration(ILogger<Integration> logger, IOptions<TheThingsIndustriesSettings> theThingsIndustriesSettings, IOptions<AzureSettings> azureSettings)
 		{
 			_logger = logger;
 			_azureSettings = azureSettings.Value;
