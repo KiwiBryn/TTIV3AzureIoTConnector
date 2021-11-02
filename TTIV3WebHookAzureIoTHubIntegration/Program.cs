@@ -28,7 +28,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			var host = new HostBuilder()
 						.ConfigureAppConfiguration(e =>
 							e.AddEnvironmentVariables()
-						  .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true).AddEnvironmentVariables().Build()
+						  .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true).Build()
 					 )
 				.ConfigureFunctionsWorkerDefaults()
 				.ConfigureServices((hostContext, services) =>
