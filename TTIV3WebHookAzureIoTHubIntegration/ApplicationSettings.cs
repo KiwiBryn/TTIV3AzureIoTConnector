@@ -26,12 +26,12 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		public string GroupEnrollmentKey { get; set; }
 	}
 
-	public class AzureSettings
+	public class AzureIoTSettings
 	{
 		[JsonProperty("IoTHubConnectionString")]
 		public string IoTHubConnectionString { get; set; }
 
-		[JsonProperty("DeviceProvisioningServiceSettings")]
+		[JsonProperty("DeviceProvisioningService")]
 		public DeviceProvisiongServiceSettings DeviceProvisioningServiceSettings { get; set; }
 	}
 

@@ -33,10 +33,8 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				.ConfigureFunctionsWorkerDefaults()
 				.ConfigureServices((hostContext, services) =>
 				{
-					services.Configure<TheThingsIndustriesSettings>(hostContext.Configuration.GetSection("TheThingsIndustries"))
-						.AddTransient<TheThingsIndustriesSettings>(a => a.GetRequiredService<IOptions<TheThingsIndustriesSettings>>().Value);
-					services.Configure<AzureSettings>(hostContext.Configuration.GetSection("AzureSettings"))
-						.AddTransient<AzureSettings>(a => a.GetRequiredService<IOptions<AzureSettings>>().Value);
+					services.Configure<TheThingsIndustriesSettings>(hostContext.Configuration.GetSection("TheThingsIndustries"));
+					services.Configure<AzureIoTSettings>(hostContext.Configuration.GetSection("AzureIoT"));
 				})
 				.ConfigureLogging(logging =>
 				{

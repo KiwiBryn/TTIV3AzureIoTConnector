@@ -85,15 +85,15 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					logger.LogInformation("Uplink-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 
 					// Check that only one of Azure Connection string or DPS is configured
-					if (string.IsNullOrEmpty(_azureSettings.IoTHubConnectionString) && (_azureSettings.DeviceProvisioningServiceSettings == null))
+					if (string.IsNullOrEmpty(_azureIoTSettings.IoTHubConnectionString) && (_azureIoTSettings.DeviceProvisioningServiceSettings == null))
 					{
-						logger.LogError("Uplink-Neither Azure IoT Hub connection string or Device Provisiong Service configured");
+						logger.LogError("Uplink-Neither Azure IoT Hub connection string or Device Provisioinng Service configured");
 
 						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 					}
 
 					// Check that only one of Azure Connection string or DPS is configured
-					if (!string.IsNullOrEmpty(_azureSettings.IoTHubConnectionString) && (_azureSettings.DeviceProvisioningServiceSettings != null))
+					if (!string.IsNullOrEmpty(_azureIoTSettings.IoTHubConnectionString) && (_azureIoTSettings.DeviceProvisioningServiceSettings != null))
 					{
 						logger.LogError("Uplink-Both Azure IoT Hub connection string and Device Provisioning Service configured");
 
@@ -101,9 +101,9 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					}
 
 					// User Azure IoT Connection string if configured and Device Provisioning Service isn't
-					if (!string.IsNullOrEmpty(_azureSettings.IoTHubConnectionString))
+					if (!string.IsNullOrEmpty(_azureIoTSettings.IoTHubConnectionString))
 					{
-						deviceClient = DeviceClient.CreateFromConnectionString(_azureSettings.IoTHubConnectionString, deviceId, transportSettings);
+						deviceClient = DeviceClient.CreateFromConnectionString(_azureIoTSettings.IoTHubConnectionString, deviceId, transportSettings);
 
 						try
 						{
@@ -118,18 +118,18 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					}
 
 					// Azure IoT Hub Device provisioning service if configured
-					if (_azureSettings.DeviceProvisioningServiceSettings != null) 
+					if (_azureIoTSettings.DeviceProvisioningServiceSettings != null) 
 					{
 						string deviceKey;
 
-						if ( string.IsNullOrEmpty(_azureSettings.DeviceProvisioningServiceSettings.IdScope) || string.IsNullOrEmpty(_azureSettings.DeviceProvisioningServiceSettings.GroupEnrollmentKey))
+						if ( string.IsNullOrEmpty(_azureIoTSettings.DeviceProvisioningServiceSettings.IdScope) || string.IsNullOrEmpty(_azureIoTSettings.DeviceProvisioningServiceSettings.GroupEnrollmentKey))
 						{
 							logger.LogError("Uplink-Device Provisioning Service requires ID Scope and Group Enrollment Key configured");
 
 							return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 						}
 
-						using (var hmac = new HMACSHA256(Convert.FromBase64String(_azureSettings.DeviceProvisioningServiceSettings.GroupEnrollmentKey)))
+						using (var hmac = new HMACSHA256(Convert.FromBase64String(_azureIoTSettings.DeviceProvisioningServiceSettings.GroupEnrollmentKey)))
 						{
 							deviceKey = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(deviceId)));
 						}
@@ -140,7 +140,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 							{
 								ProvisioningDeviceClient provClient = ProvisioningDeviceClient.Create(
 									Constants.AzureDpsGlobalDeviceEndpoint,
-									_azureSettings.DeviceProvisioningServiceSettings.IdScope,
+									_azureIoTSettings.DeviceProvisioningServiceSettings.IdScope,
 									securityProvider,
 									transport);
 
@@ -148,7 +148,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 								if (result.Status != ProvisioningRegistrationStatusType.Assigned)
 								{
-									_logger.LogError("Config-DeviceID:{0} Status:{1} RegisterAsync failed ", deviceId, result.Status);
+									_logger.LogError("Uplink-DeviceID:{0} Status:{1} RegisterAsync failed ", deviceId, result.Status);
 
 									return req.CreateResponse(HttpStatusCode.FailedDependency);
 								}
