@@ -64,7 +64,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				{
 					logger.LogWarning("Failed-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, payloadText);
 
-					return req.CreateResponse(HttpStatusCode.Conflict);
+					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
 
 				try
