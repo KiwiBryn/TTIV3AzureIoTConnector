@@ -69,7 +69,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 				try
 				{
-					await deviceClient.RejectAsync(lockToken);
+					await deviceClient.AbandonAsync(lockToken);
 				}
 				catch (DeviceMessageLockLostException)
 				{
