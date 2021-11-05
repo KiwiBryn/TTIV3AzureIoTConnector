@@ -196,7 +196,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				// If the payload has been decoded by payload formatter, put it in the message body.
 				if (payload.UplinkMessage.PayloadDecoded != null)
 				{
-					telemetryEvent.Add("PayloadDecoded", payload.UplinkMessage.PayloadDecoded);
+					EnumerateChildren(telemetryEvent, payload.UplinkMessage.PayloadDecoded);
 				}
 
 				// Send the message to Azure IoT Hub
@@ -223,6 +223,53 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			}
 
 			return req.CreateResponse(HttpStatusCode.OK);
+		}
+
+		private void EnumerateChildren(JObject jobject, JToken token)
+		{
+			if (token is JProperty property)
+			{
+				if (token.First is JValue)
+				{
+					// Temporary dirty hack for Azure IoT Central compatibility
+					if (token.Parent is JObject possibleGpsProperty)
+					{
+						// TODO Need to check if similar approach necessary accelerometer and gyro LPP payloads
+						if (possibleGpsProperty.Path.StartsWith("GPS_", StringComparison.OrdinalIgnoreCase))
+						{
+							if (string.Compare(property.Name, "Latitude", true) == 0)
+							{
+								jobject.Add("lat", property.Value);
+							}
+							if (string.Compare(property.Name, "Longitude", true) == 0)
+							{
+								jobject.Add("lon", property.Value);
+							}
+							if (string.Compare(property.Name, "Altitude", true) == 0)
+							{
+								jobject.Add("alt", property.Value);
+							}
+						}
+					}
+					jobject.Add(property.Name, property.Value);
+				}
+				else
+				{
+					JObject parentObject = new JObject();
+					foreach (JToken token2 in token.Children())
+					{
+						EnumerateChildren(parentObject, token2);
+						jobject.Add(property.Name, parentObject);
+					}
+				}
+			}
+			else
+			{
+				foreach (JToken token2 in token.Children())
+				{
+					EnumerateChildren(jobject, token2);
+				}
+			}
 		}
 	}
 }
