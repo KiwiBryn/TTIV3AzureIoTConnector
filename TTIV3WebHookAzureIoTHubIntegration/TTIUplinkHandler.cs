@@ -51,6 +51,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		[Function("Uplink")]
 		public async Task<HttpResponseData> Uplink([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
+			Models.PayloadUplink payload;
 			var logger = executionContext.GetLogger("Queued");
 
 			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
@@ -58,10 +59,20 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			{
 				string payloadText = await req.ReadAsStringAsync();
 
-				Models.PayloadUplink payload = JsonConvert.DeserializeObject<Models.PayloadUplink>(payloadText);
+				try
+				{
+					payload = JsonConvert.DeserializeObject<Models.PayloadUplink>(payloadText);
+				}
+				catch(JsonException ex)
+				{
+					logger.LogInformation(ex, "Uplink-Payload Invalid JSON:{0}", payloadText);
+
+					return req.CreateResponse(HttpStatusCode.BadRequest);
+				}
+
 				if (payload == null)
 				{
-					logger.LogInformation("Uplink-Payload {0} invalid", payloadText);
+					logger.LogInformation("Uplink-Payload invalid:{0}", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
