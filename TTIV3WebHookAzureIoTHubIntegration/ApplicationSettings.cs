@@ -16,32 +16,45 @@
 //---------------------------------------------------------------------------------
 namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
-	using Newtonsoft.Json;
+	using System.Collections.Generic;
+
+	public class MethodSetting
+	{
+		public byte Port { get; set; }
+
+		public bool Confirmed { get; set; }
+
+		public Models.DownlinkPriority Priority{ get; set; }
+
+		public Models.DownlinkQueue Queue { get; set; }
+	}
+
+	public class IoTCentralSetting
+	{
+		public Dictionary<string,MethodSetting> Methods { get; set; }
+	}
 
 	public class DeviceProvisiongServiceSettings
 	{
-		[JsonProperty("IdScope")]
 		public string IdScope { get; set; }
-		[JsonProperty("GroupEnrollmentKey")]
+
 		public string GroupEnrollmentKey { get; set; }
 	}
 
 	public class AzureIoTSettings
 	{
-		[JsonProperty("IoTHubConnectionString")]
 		public string IoTHubConnectionString { get; set; }
 
-		[JsonProperty("DeviceProvisioningService")]
-		public DeviceProvisiongServiceSettings DeviceProvisioningServiceSettings { get; set; }
+		public DeviceProvisiongServiceSettings DeviceProvisioningService { get; set; }
+
+		public IoTCentralSetting IoTCentral { get; set; }
 	}
 
 	public class TheThingsIndustriesSettings
 	{
-		[JsonProperty("WebhookId")]
 		public string WebhookId { get; set; }
-		[JsonProperty("WebhookBaseURL")]
 		public string WebhookBaseURL { get; set; }
-		[JsonProperty("ApiKey")]
+
 		public string ApiKey { get; set; }
 	}
 }

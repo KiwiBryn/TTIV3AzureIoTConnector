@@ -96,15 +96,15 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					logger.LogInformation("Uplink-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 
 					// Check that only one of Azure Connection string or DPS is configured
-					if (string.IsNullOrEmpty(_azureIoTSettings.IoTHubConnectionString) && (_azureIoTSettings.DeviceProvisioningServiceSettings == null))
+					if (string.IsNullOrEmpty(_azureIoTSettings.IoTHubConnectionString) && (_azureIoTSettings.DeviceProvisioningService == null))
 					{
-						logger.LogError("Uplink-Neither Azure IoT Hub connection string or Device Provisioinng Service configured");
+						logger.LogError("Uplink-Neither Azure IoT Hub connection string or Device Provisioning Service configured");
 
 						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 					}
 
 					// Check that only one of Azure Connection string or DPS is configured
-					if (!string.IsNullOrEmpty(_azureIoTSettings.IoTHubConnectionString) && (_azureIoTSettings.DeviceProvisioningServiceSettings != null))
+					if (!string.IsNullOrEmpty(_azureIoTSettings.IoTHubConnectionString) && (_azureIoTSettings.DeviceProvisioningService != null))
 					{
 						logger.LogError("Uplink-Both Azure IoT Hub connection string and Device Provisioning Service configured");
 
@@ -129,18 +129,18 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					}
 
 					// Azure IoT Hub Device provisioning service if configured
-					if (_azureIoTSettings.DeviceProvisioningServiceSettings != null) 
+					if (_azureIoTSettings.DeviceProvisioningService != null) 
 					{
 						string deviceKey;
 
-						if ( string.IsNullOrEmpty(_azureIoTSettings.DeviceProvisioningServiceSettings.IdScope) || string.IsNullOrEmpty(_azureIoTSettings.DeviceProvisioningServiceSettings.GroupEnrollmentKey))
+						if ( string.IsNullOrEmpty(_azureIoTSettings.DeviceProvisioningService.IdScope) || string.IsNullOrEmpty(_azureIoTSettings.DeviceProvisioningService.GroupEnrollmentKey))
 						{
 							logger.LogError("Uplink-Device Provisioning Service requires ID Scope and Group Enrollment Key configured");
 
 							return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 						}
 
-						using (var hmac = new HMACSHA256(Convert.FromBase64String(_azureIoTSettings.DeviceProvisioningServiceSettings.GroupEnrollmentKey)))
+						using (var hmac = new HMACSHA256(Convert.FromBase64String(_azureIoTSettings.DeviceProvisioningService.GroupEnrollmentKey)))
 						{
 							deviceKey = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(deviceId)));
 						}
@@ -151,7 +151,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 							{
 								ProvisioningDeviceClient provClient = ProvisioningDeviceClient.Create(
 									Constants.AzureDpsGlobalDeviceEndpoint,
-									_azureIoTSettings.DeviceProvisioningServiceSettings.IdScope,
+									_azureIoTSettings.DeviceProvisioningService.IdScope,
 									securityProvider,
 									transport);
 
