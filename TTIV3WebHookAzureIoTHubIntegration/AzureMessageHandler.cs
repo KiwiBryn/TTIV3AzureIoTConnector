@@ -43,75 +43,160 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 				using (message)
 				{
+					Models.Downlink downlink;
+					Models.DownlinkQueue queue;
+
 					string payloadText = Encoding.UTF8.GetString(message.GetBytes()).Trim();
 
-					if (!AzureDownlinkMessage.PortTryGet(message.Properties, out byte port))
+					if (message.Properties.ContainsKey("method-name"))
 					{
-						_logger.LogWarning("Downlink-Port property is invalid");
+						#region Azure IoT Central C2D message processing
+						string methodName = message.Properties["method-name"];
 
-						await deviceClient.RejectAsync(message);
-						return;
-					}
-
-					if (!AzureDownlinkMessage.ConfirmedTryGet(message.Properties, out bool confirmed))
-					{
-						_logger.LogWarning("Downlink-Confirmed flag is invalid");
-
-						await deviceClient.RejectAsync(message);
-						return;
-					}
-
-					if (!AzureDownlinkMessage.PriorityTryGet(message.Properties, out Models.DownlinkPriority priority))
-					{
-						_logger.LogWarning("Downlink-Priority value is invalid");
-
-						await deviceClient.RejectAsync(message);
-						return;
-					}
-
-					if (!AzureDownlinkMessage.QueueTryGet(message.Properties, out Models.DownlinkQueue queue))
-					{
-						_logger.LogWarning("Downlink-Queue value is invalid");
-
-						await deviceClient.RejectAsync(message.LockToken);
-						return;
-					}
-
-					Models.Downlink downlink = new Models.Downlink()
-					{
-						Confirmed = confirmed,
-						Priority = priority,
-						Port = port,
-						CorrelationIds = AzureLockToken.Add(message.LockToken),
-					};
-
-					// Split over multiple lines in an attempt to improve readability. In this scenario a valid JSON string should start/end with {/} for an object or [/] for an array
-					if ((payloadText.StartsWith("{") && payloadText.EndsWith("}"))
-															||
-						((payloadText.StartsWith("[") && payloadText.EndsWith("]"))))
-					{
-						try
+						if (string.IsNullOrWhiteSpace(methodName))
 						{
-							downlink.PayloadDecoded = JToken.Parse(payloadText);
+							_logger.LogWarning("Downlink-DeviceID:{0} MessagedID:{1} LockToken:{2} method-name property empty", receiveMessageHandlerContext.DeviceId, message.MessageId, message.LockToken);
+
+							await deviceClient.RejectAsync(message);
+							return;
 						}
-						catch (JsonReaderException)
+
+						// Look up the method settings to get confirmed, port, priority, and queue
+						if (!_azureIoTSettings.IoTCentral.Methods.TryGetValue(methodName, out MethodSetting methodSetting))
 						{
-							downlink.PayloadRaw = payloadText;
+							_logger.LogWarning("Downlink-DeviceID:{0} MessagedID:{1} LockToken:{2} method-name:{3} has no settings", receiveMessageHandlerContext.DeviceId, message.MessageId, message.LockToken, methodName);
+
+							await deviceClient.RejectAsync(message);
+							return;
 						}
+
+						downlink = new Models.Downlink()
+						{
+							Confirmed = methodSetting.Confirmed,
+							Priority = methodSetting.Priority,
+							Port = methodSetting.Port,
+							CorrelationIds = AzureLockToken.Add(message.LockToken),
+						};
+
+						queue = methodSetting.Queue;
+
+						// Check to see if special case for Azure IoT central command with no request payload
+						if (payloadText.CompareTo("@") != 0)
+						{
+							try
+							{
+								// Split over multiple lines to improve readability
+								if (!(payloadText.StartsWith("{") && payloadText.EndsWith("}"))
+															&&
+									(!(payloadText.StartsWith("[") && payloadText.EndsWith("]"))))
+								{
+									throw new JsonReaderException();
+								}
+
+								downlink.PayloadDecoded = JToken.Parse(payloadText);
+							}
+							catch (JsonReaderException)
+							{
+								try
+								{
+									JToken value = JToken.Parse(payloadText);
+
+									downlink.PayloadDecoded = new JObject(new JProperty(methodName, value));
+								}
+								catch (JsonReaderException)
+								{
+									downlink.PayloadDecoded = new JObject(new JProperty(methodName, payloadText));
+								}
+							}
+						}
+						else
+						{
+							downlink.PayloadRaw = "";
+						}
+
+						_logger.LogInformation("Downlink-IoT Central DeviceID:{0} Method:{1} MessageID:{2} LockToken:{3} Port:{4} Confirmed:{5} Priority:{6} Queue:{7}",
+								receiveMessageHandlerContext.DeviceId,
+								methodName,
+								message.MessageId,
+								message.LockToken,
+								downlink.Port,
+								downlink.Confirmed,
+								downlink.Priority,
+								queue);
+						#endregion
 					}
 					else
 					{
-						downlink.PayloadRaw = payloadText;
-					}
+						#region Azure IoT Hub C2D message processing
+						if (!AzureDownlinkMessage.PortTryGet(message.Properties, out byte port))
+						{
+							_logger.LogWarning("Downlink-MessagedID:{0} LockToken:{1} Port property is invalid", message.MessageId, message.LockToken);
 
-					_logger.LogInformation("Downlink-IoT Hub DeviceID:{0} MessageID:{2} LockToken:{3} Port:{4} Confirmed:{5} Priority:{6} Queue:{7}",
-						receiveMessageHandlerContext.DeviceId,
-						message.MessageId,
-						message.LockToken,
-						downlink.Port,
-						downlink.Confirmed,
-						downlink.Priority,
-						queue);
+							await deviceClient.RejectAsync(message);
+							return;
+						}
+
+						if (!AzureDownlinkMessage.ConfirmedTryGet(message.Properties, out bool confirmed))
+						{
+							_logger.LogWarning("Downlink-MessagedID:{0} LockToken:{1} Confirmed property is invalid", message.MessageId, message.LockToken);
+
+							await deviceClient.RejectAsync(message);
+							return;
+						}
+
+						if (!AzureDownlinkMessage.PriorityTryGet(message.Properties, out Models.DownlinkPriority priority))
+						{
+							_logger.LogWarning("Downlink-MessagedID:{0} LockToken:{1} Priority property is invalid", message.MessageId, message.LockToken);
+
+							await deviceClient.RejectAsync(message);
+							return;
+						}
+
+						if (!AzureDownlinkMessage.QueueTryGet(message.Properties, out queue))
+						{
+							_logger.LogWarning("Downlink-MessagedID:{0} LockToken:{1} Queue property is invalid", message.MessageId, message.LockToken);
+
+							await deviceClient.RejectAsync(message.LockToken);
+							return;
+						}
+
+						downlink = new Models.Downlink()
+						{
+							Confirmed = confirmed,
+							Priority = priority,
+							Port = port,
+							CorrelationIds = AzureLockToken.Add(message.LockToken),
+						};
+
+						// Split over multiple lines in an attempt to improve readability. In this scenario a valid JSON string should start/end with {/} for an object or [/] for an array
+						if ((payloadText.StartsWith("{") && payloadText.EndsWith("}"))
+																||
+							((payloadText.StartsWith("[") && payloadText.EndsWith("]"))))
+						{
+							try
+							{
+								downlink.PayloadDecoded = JToken.Parse(payloadText);
+							}
+							catch (JsonReaderException)
+							{
+								downlink.PayloadRaw = payloadText;
+							}
+						}
+						else
+						{
+							downlink.PayloadRaw = payloadText;
+						}
+
+						_logger.LogInformation("Downlink-IoT Hub DeviceID:{0} MessageID:{1} LockToken:{2} Port:{3} Confirmed:{4} Priority:{5} Queue:{6}",
+							receiveMessageHandlerContext.DeviceId,
+							message.MessageId,
+							message.LockToken,
+							downlink.Port,
+							downlink.Confirmed,
+							downlink.Priority,
+							queue);
+						#endregion
+					}
 
 					Models.DownlinkPayload Payload = new Models.DownlinkPayload()
 					{
@@ -130,7 +215,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						client.UploadString(new Uri(url), JsonConvert.SerializeObject(Payload));
 					}
 
-					_logger.LogInformation("Downlink-DeviceID:{0} LockToken:{1} success", receiveMessageHandlerContext.DeviceId, message.LockToken);
+					_logger.LogInformation("Downlink-DeviceID:{0} MessageID:{1} LockToken:{2} success", receiveMessageHandlerContext.DeviceId, message.MessageId, message.LockToken);
 				}
 			}
 			catch (Exception ex)
