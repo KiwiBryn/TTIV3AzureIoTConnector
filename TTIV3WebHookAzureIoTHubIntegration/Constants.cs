@@ -16,7 +16,6 @@
 //---------------------------------------------------------------------------------
 namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
-	using System;
 
 	public static class Constants
 	{
