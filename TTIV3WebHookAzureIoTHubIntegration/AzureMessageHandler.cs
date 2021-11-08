@@ -62,7 +62,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						}
 
 						// Look up the method settings to get confirmed, port, priority, and queue
-						if (!_azureIoTSettings.IoTCentral.Methods.TryGetValue(methodName, out MethodSetting methodSetting))
+						if ((_azureIoTSettings == null) || (_azureIoTSettings.IoTCentral == null) || !_azureIoTSettings.IoTCentral.Methods.TryGetValue(methodName, out MethodSetting methodSetting))
 						{
 							_logger.LogWarning("Downlink-DeviceID:{0} MessagedID:{1} LockToken:{2} method-name:{3} has no settings", receiveMessageHandlerContext.DeviceId, message.MessageId, message.LockToken, methodName);
 

@@ -37,17 +37,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 	public partial class Integration
 	{
-		private readonly ITransportSettings[] transportSettings = new ITransportSettings[]
-		{
-			new AmqpTransportSettings(TransportType.Amqp_Tcp_Only)
-			{
-				AmqpConnectionPoolSettings = new AmqpConnectionPoolSettings()
-				{
-					Pooling = true,
-				}
-			 }
-		};
-
 		[Function("Uplink")]
 		public async Task<HttpResponseData> Uplink([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
@@ -95,6 +84,20 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				{
 					logger.LogInformation("Uplink-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 
+					if ((_theThingsIndustriesSettings == null) || string.IsNullOrEmpty(_theThingsIndustriesSettings.WebhookId) || string.IsNullOrEmpty(_theThingsIndustriesSettings.WebhookBaseURL) || string.IsNullOrEmpty(_theThingsIndustriesSettings.ApiKey))
+					{
+						logger.LogError("Uplink-The Things Industries settings not configured");
+
+						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
+					}
+
+					if (_azureIoTSettings == null)
+					{
+						logger.LogError("Uplink-Azure IoT settings not configured");
+
+						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
+					}
+
 					// Check that only one of Azure Connection string or DPS is configured
 					if (string.IsNullOrEmpty(_azureIoTSettings.IoTHubConnectionString) && (_azureIoTSettings.DeviceProvisioningService == null))
 					{
@@ -114,7 +117,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					// User Azure IoT Connection string if configured and Device Provisioning Service isn't
 					if (!string.IsNullOrEmpty(_azureIoTSettings.IoTHubConnectionString))
 					{
-						deviceClient = DeviceClient.CreateFromConnectionString(_azureIoTSettings.IoTHubConnectionString, deviceId, transportSettings);
+						deviceClient = DeviceClient.CreateFromConnectionString(_azureIoTSettings.IoTHubConnectionString, deviceId, TransportSettings);
 
 						try
 						{
@@ -129,11 +132,11 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					}
 
 					// Azure IoT Hub Device provisioning service if configured
-					if (_azureIoTSettings.DeviceProvisioningService != null) 
+					if (_azureIoTSettings.DeviceProvisioningService != null)
 					{
 						string deviceKey;
 
-						if ( string.IsNullOrEmpty(_azureIoTSettings.DeviceProvisioningService.IdScope) || string.IsNullOrEmpty(_azureIoTSettings.DeviceProvisioningService.GroupEnrollmentKey))
+						if (string.IsNullOrEmpty(_azureIoTSettings.DeviceProvisioningService.IdScope) || string.IsNullOrEmpty(_azureIoTSettings.DeviceProvisioningService.GroupEnrollmentKey))
 						{
 							logger.LogError("Uplink-Device Provisioning Service requires ID Scope and Group Enrollment Key configured");
 
@@ -166,7 +169,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 								IAuthenticationMethod authentication = new DeviceAuthenticationWithRegistrySymmetricKey(result.DeviceId, (securityProvider as SecurityProviderSymmetricKey).GetPrimaryKey());
 
-								deviceClient = DeviceClient.Create(result.AssignedHub, authentication, transportSettings);
+								deviceClient = DeviceClient.Create(result.AssignedHub, authentication, TransportSettings);
 
 								await deviceClient.OpenAsync();
 							}
@@ -282,5 +285,16 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				}
 			}
 		}
+
+		private readonly ITransportSettings[] TransportSettings = new ITransportSettings[]
+		{
+			new AmqpTransportSettings(TransportType.Amqp_Tcp_Only)
+			{
+				AmqpConnectionPoolSettings = new AmqpConnectionPoolSettings()
+				{
+					Pooling = true,
+				}
+			 }
+		};
 	}
 }

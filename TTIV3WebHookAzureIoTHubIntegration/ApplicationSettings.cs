@@ -20,30 +20,30 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 	public class MethodSetting
 	{
-		public byte Port { get; set; }
+		public byte Port { get; set; } = 0;
 
-		public bool Confirmed { get; set; }
+		public bool Confirmed { get; set; } = false;
 
-		public Models.DownlinkPriority Priority{ get; set; }
+		public Models.DownlinkPriority Priority { get; set; } = Models.DownlinkPriority.Normal;
 
-		public Models.DownlinkQueue Queue { get; set; }
+		public Models.DownlinkQueue Queue { get; set; } = Models.DownlinkQueue.Replace;
 	}
 
 	public class IoTCentralSetting
 	{
-		public Dictionary<string,MethodSetting> Methods { get; set; }
+		public Dictionary<string, MethodSetting> Methods { get; set; }
 	}
 
 	public class DeviceProvisiongServiceSettings
 	{
-		public string IdScope { get; set; }
+		public string IdScope { get; set; } = string.Empty;
 
-		public string GroupEnrollmentKey { get; set; }
+		public string GroupEnrollmentKey { get; set; } = string.Empty;
 	}
 
 	public class AzureIoTSettings
 	{
-		public string IoTHubConnectionString { get; set; }
+		public string IoTHubConnectionString { get; set; } = string.Empty;
 
 		public DeviceProvisiongServiceSettings DeviceProvisioningService { get; set; }
 
@@ -52,9 +52,9 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 	public class TheThingsIndustriesSettings
 	{
-		public string WebhookId { get; set; }
-		public string WebhookBaseURL { get; set; }
+		public string WebhookId { get; set; } = string.Empty;
+		public string WebhookBaseURL { get; set; } = string.Empty;
 
-		public string ApiKey { get; set; }
+		public string ApiKey { get; set; } = string.Empty;
 	}
 }
