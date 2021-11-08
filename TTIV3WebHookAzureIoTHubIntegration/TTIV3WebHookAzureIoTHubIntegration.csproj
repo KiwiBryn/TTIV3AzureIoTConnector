@@ -4,6 +4,16 @@
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
     <OutputType>Exe</OutputType>
     <RootNamespace>devMobile.IoT.TheThingsIndustries.AzureIoTHub</RootNamespace>
+    <Version>1.0.1</Version>
+    <PackageProjectUrl>https://blog.devmobile.co.nz</PackageProjectUrl>
+    <Authors>Bryn Lewis @KiwiBryn</Authors>
+    <Company>devMobile Software</Company>
+    <Copyright>devMobile Software, Apache License, Version 2.0</Copyright>
+    <RepositoryUrl>https://github.com/KiwiBryn/TTIV3AzureIoTConnector</RepositoryUrl>
+    <PackageTags>LoRaWAN TheThingsNetwork TheThingsIndustries TheThingsStack</PackageTags>
+    <AssemblyVersion>1.0.2.0</AssemblyVersion>
+    <FileVersion>1.0.2.0</FileVersion>
+    <Product>The Things Industries V3 WebHook Azure IoT Hub Integration</Product>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Devices.Client" Version="1.39.0" />
