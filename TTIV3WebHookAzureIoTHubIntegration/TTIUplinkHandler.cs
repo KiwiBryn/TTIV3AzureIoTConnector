@@ -84,9 +84,9 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				{
 					logger.LogInformation("Uplink-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 
-					if ((_theThingsIndustriesSettings == null) || string.IsNullOrEmpty(_theThingsIndustriesSettings.WebhookId) || string.IsNullOrEmpty(_theThingsIndustriesSettings.WebhookBaseURL) || string.IsNullOrEmpty(_theThingsIndustriesSettings.ApiKey))
+					if ((_theThingsIndustriesSettings == null) || string.IsNullOrEmpty(_theThingsIndustriesSettings.WebhookBaseURL) || (_theThingsIndustriesSettings.Applications == null))
 					{
-						logger.LogError("Uplink-The Things Industries settings not configured");
+						logger.LogError("Uplink-The Things Industries WebhookBaseURL or no Applications are configured");
 
 						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 					}
@@ -183,13 +183,35 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						return req.CreateResponse(HttpStatusCode.Conflict);
 					}
 
+					// Lookup the Application's API Key
+					if (!_theThingsIndustriesSettings.Applications.TryGetValue(applicationId, out ApplicationSetting applicationSetting))
+					{
+						_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} no Application settings configured", deviceId, applicationId);
+
+						return req.CreateResponse(HttpStatusCode.Conflict);
+					}
+
+					if (string.IsNullOrEmpty( applicationSetting.ApiKey))
+					{
+						_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} Application API Key not configured", deviceId, applicationId);
+
+						return req.CreateResponse(HttpStatusCode.Conflict);
+					}
+
+					if (string.IsNullOrEmpty(applicationSetting.WebhookId))
+					{
+						_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} Application webhook ID not configured", deviceId, applicationId);
+
+						return req.CreateResponse(HttpStatusCode.Conflict);
+					}
+
 					Models.AzureIoTHubReceiveMessageHandlerContext context = new Models.AzureIoTHubReceiveMessageHandlerContext()
 					{
 						DeviceId = deviceId,
 						ApplicationId = applicationId,
-						WebhookId = _theThingsIndustriesSettings.WebhookId,
+						WebhookId = applicationSetting.WebhookId,
 						WebhookBaseURL = _theThingsIndustriesSettings.WebhookBaseURL,
-						ApiKey = _theThingsIndustriesSettings.ApiKey
+						ApiKey = applicationSetting.ApiKey
 					};
 
 					await deviceClient.SetReceiveMessageHandlerAsync(AzureIoTHubClientReceiveMessageHandler, context);

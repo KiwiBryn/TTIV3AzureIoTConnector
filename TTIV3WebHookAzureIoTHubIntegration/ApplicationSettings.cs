@@ -50,11 +50,17 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		public IoTCentralSetting IoTCentral { get; set; }
 	}
 
+	public class ApplicationSetting
+	{
+		public string ApiKey { get; set; } = string.Empty;
+
+		public string WebhookId { get; set; } = string.Empty;
+	}
+
 	public class TheThingsIndustriesSettings
 	{
-		public string WebhookId { get; set; } = string.Empty;
 		public string WebhookBaseURL { get; set; } = string.Empty;
 
-		public string ApiKey { get; set; } = string.Empty;
+		public Dictionary<string, ApplicationSetting> Applications { get; set; }
 	}
 }
