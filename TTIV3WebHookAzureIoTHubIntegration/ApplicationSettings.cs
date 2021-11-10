@@ -52,6 +52,8 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 	public class ApplicationSetting
 	{
+		public string DtdlModelId{ get; set; } = string.Empty;
+
 		public string ApiKey { get; set; } = string.Empty;
 
 		public string WebhookId { get; set; } = string.Empty;

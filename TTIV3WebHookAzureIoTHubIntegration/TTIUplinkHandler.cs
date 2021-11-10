@@ -25,6 +25,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	using Microsoft.Azure.Devices.Client;
 	using Microsoft.Azure.Devices.Client.Exceptions;
 	using Microsoft.Azure.Devices.Provisioning.Client;
+	using Microsoft.Azure.Devices.Provisioning.Client.PlugAndPlay;
 	using Microsoft.Azure.Devices.Provisioning.Client.Transport;
 	using Microsoft.Azure.Devices.Shared;
 	using Microsoft.Azure.Functions.Worker;
@@ -77,6 +78,34 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				}
 
 				int port = payload.UplinkMessage.Port.Value;
+
+				// Lookup the TTI Application's API Key etc.
+				if (!_theThingsIndustriesSettings.Applications.TryGetValue(applicationId, out ApplicationSetting applicationSetting))
+				{
+					_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} no Application settings configured", deviceId, applicationId);
+
+					return req.CreateResponse(HttpStatusCode.Conflict);
+				}
+
+				if (string.IsNullOrEmpty(applicationSetting.ApiKey))
+				{
+					_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} Application API Key not configured", deviceId, applicationId);
+
+					return req.CreateResponse(HttpStatusCode.Conflict);
+				}
+
+				if (string.IsNullOrEmpty(applicationSetting.WebhookId))
+				{
+					_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} Application webhook ID not configured", deviceId, applicationId);
+
+					return req.CreateResponse(HttpStatusCode.Conflict);
+				}
+
+				// See if there is a DTDL V2 ID setup for the application
+				if (string.IsNullOrEmpty(applicationSetting.DtdlModelId))
+				{
+					logger.LogWarning("Uplink-Device Provisioning Service no DTDL V2 ID is configured");
+				}
 
 				logger.LogInformation("Uplink-ApplicationID:{0} DeviceID:{1} Port:{2} Payload Raw:{3}", applicationId, deviceId, port, payload.UplinkMessage.PayloadRaw);
 
@@ -158,7 +187,21 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 									securityProvider,
 									transport);
 
-								DeviceRegistrationResult result = await provClient.RegisterAsync();
+								DeviceRegistrationResult result;
+
+								// If TTI application doesn't have a DTDLV2 ID 
+								if (string.IsNullOrEmpty(applicationSetting.DtdlModelId))
+								{
+									result = await provClient.RegisterAsync();
+								}
+								else
+								{ 
+									ProvisioningRegistrationAdditionalData provisioningRegistrationAdditionalData = new ProvisioningRegistrationAdditionalData()
+									{
+										JsonData = PnpConvention.CreateDpsPayload(applicationSetting.DtdlModelId)
+									};
+									result = await provClient.RegisterAsync(provisioningRegistrationAdditionalData);
+								}
 
 								if (result.Status != ProvisioningRegistrationStatusType.Assigned)
 								{
@@ -179,28 +222,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					if (!_DeviceClients.TryAdd(deviceId, deviceClient))
 					{
 						logger.LogWarning("Uplink-TryAdd failed for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
-
-						return req.CreateResponse(HttpStatusCode.Conflict);
-					}
-
-					// Lookup the Application's API Key
-					if (!_theThingsIndustriesSettings.Applications.TryGetValue(applicationId, out ApplicationSetting applicationSetting))
-					{
-						_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} no Application settings configured", deviceId, applicationId);
-
-						return req.CreateResponse(HttpStatusCode.Conflict);
-					}
-
-					if (string.IsNullOrEmpty( applicationSetting.ApiKey))
-					{
-						_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} Application API Key not configured", deviceId, applicationId);
-
-						return req.CreateResponse(HttpStatusCode.Conflict);
-					}
-
-					if (string.IsNullOrEmpty(applicationSetting.WebhookId))
-					{
-						_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} Application webhook ID not configured", deviceId, applicationId);
 
 						return req.CreateResponse(HttpStatusCode.Conflict);
 					}
