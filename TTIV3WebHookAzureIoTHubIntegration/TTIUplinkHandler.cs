@@ -53,7 +53,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				{
 					payload = JsonConvert.DeserializeObject<Models.PayloadUplink>(payloadText);
 				}
-				catch(JsonException ex)
+				catch (JsonException ex)
 				{
 					logger.LogInformation(ex, "Uplink-Payload Invalid JSON:{0}", payloadText);
 
@@ -195,7 +195,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 									result = await provClient.RegisterAsync();
 								}
 								else
-								{ 
+								{
 									ProvisioningRegistrationAdditionalData provisioningRegistrationAdditionalData = new ProvisioningRegistrationAdditionalData()
 									{
 										JsonData = PnpConvention.CreateDpsPayload(applicationSetting.DtdlModelId)
