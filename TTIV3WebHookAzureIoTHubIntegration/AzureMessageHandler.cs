@@ -38,6 +38,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				if (!_DeviceClients.TryGetValue(receiveMessageHandlerContext.DeviceId, out DeviceClient deviceClient))
 				{
 					_logger.LogWarning("Downlink-DeviceID:{0} unknown", receiveMessageHandlerContext.DeviceId);
+
 					return;
 				}
 
@@ -65,7 +66,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						if ((_azureIoTSettings == null) || (_azureIoTSettings.IoTCentral == null) || !_azureIoTSettings.IoTCentral.Methods.TryGetValue(methodName, out MethodSetting methodSetting))
 						{
 							_logger.LogWarning("Downlink-DeviceID:{0} MessagedID:{1} LockToken:{2} method-name:{3} has no settings", receiveMessageHandlerContext.DeviceId, message.MessageId, message.LockToken, methodName);
-
+							
 							await deviceClient.RejectAsync(message);
 							return;
 						}
@@ -168,19 +169,9 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 							CorrelationIds = AzureLockToken.Add(message.LockToken),
 						};
 
-						// Split over multiple lines in an attempt to improve readability. In this scenario a valid JSON string should start/end with {/} for an object or [/] for an array
-						if ((payloadText.StartsWith("{") && payloadText.EndsWith("}"))
-																||
-							((payloadText.StartsWith("[") && payloadText.EndsWith("]"))))
+						if (payloadText.IsPayloadValidJson())
 						{
-							try
-							{
-								downlink.PayloadDecoded = JToken.Parse(payloadText);
-							}
-							catch (JsonReaderException)
-							{
-								downlink.PayloadRaw = payloadText;
-							}
+							downlink.PayloadDecoded = JToken.Parse(payloadText);
 						}
 						else
 						{
