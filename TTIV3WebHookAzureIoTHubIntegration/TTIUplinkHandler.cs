@@ -79,74 +79,93 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 				int port = payload.UplinkMessage.Port.Value;
 
-				// Lookup the TTI Application's API Key etc.
-				if (!_theThingsIndustriesSettings.Applications.TryGetValue(applicationId, out ApplicationSetting applicationSetting))
-				{
-					_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} no Application settings configured", deviceId, applicationId);
-
-					return req.CreateResponse(HttpStatusCode.Conflict);
-				}
-
-				if (string.IsNullOrEmpty(applicationSetting.ApiKey))
-				{
-					_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} Application API Key not configured", deviceId, applicationId);
-
-					return req.CreateResponse(HttpStatusCode.Conflict);
-				}
-
-				if (string.IsNullOrEmpty(applicationSetting.WebhookId))
-				{
-					_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} Application webhook ID not configured", deviceId, applicationId);
-
-					return req.CreateResponse(HttpStatusCode.Conflict);
-				}
-
-				// See if there is a DTDL V2 ID setup for the application
-				if (string.IsNullOrEmpty(applicationSetting.DtdlModelId))
-				{
-					logger.LogWarning("Uplink-Device Provisioning Service no DTDL V2 ID is configured");
-				}
-
 				logger.LogInformation("Uplink-ApplicationID:{0} DeviceID:{1} Port:{2} Payload Raw:{3}", applicationId, deviceId, port, payload.UplinkMessage.PayloadRaw);
 
 				if (!_DeviceClients.TryGetValue(deviceId, out DeviceClient deviceClient))
 				{
-					logger.LogInformation("Uplink-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
-
-					if ((_theThingsIndustriesSettings == null) || string.IsNullOrEmpty(_theThingsIndustriesSettings.WebhookBaseURL) || (_theThingsIndustriesSettings.Applications == null))
+					// Validate The Things Industries configuaration
+					if (string.IsNullOrEmpty(_theThingsIndustriesSettings.WebhookBaseURL))
 					{
-						logger.LogError("Uplink-The Things Industries WebhookBaseURL or no Applications are configured");
+						_logger.LogError("Uplink-The Things Industries no Webhook Base URL configured");
+
+						return req.CreateResponse(HttpStatusCode.Conflict);
+					}
+
+					if (_theThingsIndustriesSettings.Applications == null)
+					{
+						_logger.LogError("Uplink-The Things Industries no applications configured");
 
 						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 					}
 
-					if (_azureIoTSettings == null)
+					// Validate The Things Industries Application configuaration
+					if (!_theThingsIndustriesSettings.Applications.TryGetValue(applicationId, out TheThingsIndustriesSettingApplicationSetting ttiAppplicationSettings))
 					{
-						logger.LogError("Uplink-Azure IoT settings not configured");
+						_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} no Application settings configured", deviceId, applicationId);
 
 						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 					}
 
-					// Check that only one of Azure Connection string or DPS is configured
-					if (string.IsNullOrEmpty(_azureIoTSettings.IoTHubConnectionString) && (_azureIoTSettings.DeviceProvisioningService == null))
+					if (string.IsNullOrEmpty(ttiAppplicationSettings.ApiKey))
 					{
-						logger.LogError("Uplink-Neither Azure IoT Hub connection string or Device Provisioning Service configured");
+						_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} no API Key configured", deviceId, applicationId);
 
 						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 					}
 
-					// Check that only one of Azure Connection string or DPS is configured
-					if (!string.IsNullOrEmpty(_azureIoTSettings.IoTHubConnectionString) && (_azureIoTSettings.DeviceProvisioningService != null))
+					if (string.IsNullOrEmpty(ttiAppplicationSettings.WebhookId))
 					{
-						logger.LogError("Uplink-Both Azure IoT Hub connection string and Device Provisioning Service configured");
+						_logger.LogError("Uplink-DeviceID:{0} AppplicationID:{1} no Webhook ID configured", deviceId, applicationId);
 
 						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 					}
 
-					// User Azure IoT Connection string if configured and Device Provisioning Service isn't
-					if (!string.IsNullOrEmpty(_azureIoTSettings.IoTHubConnectionString))
+					// Validate Azure IoT Hub and DeviceProvisioning Services configuration
+					if ((_azureIoTSettings.DeviceProvisioningService != null) && (_azureIoTSettings.IoTHub != null))
 					{
-						deviceClient = DeviceClient.CreateFromConnectionString(_azureIoTSettings.IoTHubConnectionString, deviceId, TransportSettings);
+						_logger.LogError("Uplink-Azure IoT neither Azure Device Provisioning Service or IoT Hub configuration");
+
+						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
+					}
+
+					if ((_azureIoTSettings.DeviceProvisioningService == null) && (_azureIoTSettings.IoTHub == null))
+					{
+						_logger.LogError("Uplink-Azure IoT both Azure Device Provisioning Service or IoT Hub configuration");
+
+						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
+					}
+
+					// Validate the Azure IoT Hub Device configuration
+					if (_azureIoTSettings.IoTHub != null)
+					{
+						if (_azureIoTSettings.IoTHub.Applications == null)
+						{
+							logger.LogError("Uplink-Device Provisioning Service Application settings not configured");
+
+							return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
+						}
+
+						if (!_azureIoTSettings.IoTHub.Applications.TryGetValue( applicationId, out IoTHubApplicationSetting ioTHubApplicationSetting))
+						{
+							logger.LogError("Uplink-Device Provisioning Service Application settings not configured");
+
+							return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
+						}
+
+						if (string.IsNullOrEmpty(ioTHubApplicationSetting.DtdlModelId))
+						{
+							logger.LogWarning("Uplink-Device Provisioning Service Application settings DTDL not configured");
+
+							deviceClient = DeviceClient.CreateFromConnectionString(_azureIoTSettings.IoTHub.IoTHubConnectionString, deviceId, TransportSettings);
+						}
+						else
+						{
+							ProvisioningRegistrationAdditionalData provisioningRegistrationAdditionalData = new ProvisioningRegistrationAdditionalData()
+							{
+								JsonData = PnpConvention.CreateDpsPayload(ioTHubApplicationSetting.DtdlModelId)
+							};
+							deviceClient = DeviceClient.CreateFromConnectionString(_azureIoTSettings.IoTHub.IoTHubConnectionString, deviceId, TransportSettings);
+						}
 
 						try
 						{
@@ -160,19 +179,37 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						}
 					}
 
-					// Azure IoT Hub Device provisioning service if configured
+					// Validate the Azure IoT Hub Device Provisioning Service configuration
 					if (_azureIoTSettings.DeviceProvisioningService != null)
 					{
-						string deviceKey;
-
-						if (string.IsNullOrEmpty(_azureIoTSettings.DeviceProvisioningService.IdScope) || string.IsNullOrEmpty(_azureIoTSettings.DeviceProvisioningService.GroupEnrollmentKey))
+						if (_azureIoTSettings.DeviceProvisioningService.Applications == null)
 						{
-							logger.LogError("Uplink-Device Provisioning Service requires ID Scope and Group Enrollment Key configured");
+							logger.LogError("Uplink-Device Provisioning Service Application settings not configured");
 
 							return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 						}
 
-						using (var hmac = new HMACSHA256(Convert.FromBase64String(_azureIoTSettings.DeviceProvisioningService.GroupEnrollmentKey)))
+						if (!_azureIoTSettings.DeviceProvisioningService.Applications.TryGetValue(applicationId, out DeviceProvisiongServiceApplicationSetting dpsApplicationSetting))
+						{
+							logger.LogError("Uplink-Device Provisioning Service Application settings not configured");
+
+							return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
+						}
+
+						if (string.IsNullOrEmpty(dpsApplicationSetting.GroupEnrollmentKey))
+						{
+							logger.LogError("Uplink-Device Provisioning Service Application settings Group Enrollment not configured");
+
+							return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
+						}
+
+						if (string.IsNullOrEmpty(dpsApplicationSetting.DtdlModelId))
+						{
+							logger.LogWarning("Uplink-Device Provisioning Service Application settings DTDL not configured");
+						}
+
+						string deviceKey;
+						using (var hmac = new HMACSHA256(Convert.FromBase64String(dpsApplicationSetting.GroupEnrollmentKey)))
 						{
 							deviceKey = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(deviceId)));
 						}
@@ -181,26 +218,35 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						{
 							using (var transport = new ProvisioningTransportHandlerAmqp(TransportFallbackType.TcpOnly))
 							{
+								DeviceRegistrationResult result;
+
 								ProvisioningDeviceClient provClient = ProvisioningDeviceClient.Create(
 									Constants.AzureDpsGlobalDeviceEndpoint,
-									_azureIoTSettings.DeviceProvisioningService.IdScope,
+									dpsApplicationSetting.GroupEnrollmentKey,
 									securityProvider,
 									transport);
 
-								DeviceRegistrationResult result;
-
-								// If TTI application doesn't have a DTDLV2 ID 
-								if (string.IsNullOrEmpty(applicationSetting.DtdlModelId))
+								try
 								{
-									result = await provClient.RegisterAsync();
-								}
-								else
-								{
-									ProvisioningRegistrationAdditionalData provisioningRegistrationAdditionalData = new ProvisioningRegistrationAdditionalData()
+									// If TTI application doesn't have a DTDLV2 ID 
+									if (!string.IsNullOrEmpty(dpsApplicationSetting.DtdlModelId))
 									{
-										JsonData = PnpConvention.CreateDpsPayload(applicationSetting.DtdlModelId)
-									};
-									result = await provClient.RegisterAsync(provisioningRegistrationAdditionalData);
+										ProvisioningRegistrationAdditionalData provisioningRegistrationAdditionalData = new ProvisioningRegistrationAdditionalData()
+										{
+											JsonData = PnpConvention.CreateDpsPayload(dpsApplicationSetting.DtdlModelId)
+										};
+										result = await provClient.RegisterAsync(provisioningRegistrationAdditionalData);
+									}
+									else
+									{
+										result = await provClient.RegisterAsync();
+									}
+								}
+								catch(ProvisioningTransportException ex)
+								{
+									logger.LogInformation(ex, "Uplink-DeviceID:{0} RegisterAsync failed IDScope and/or GroupEnrollmentKey invalid", deviceId);
+
+									return req.CreateResponse(HttpStatusCode.Unauthorized);
 								}
 
 								if (result.Status != ProvisioningRegistrationStatusType.Assigned)
@@ -215,13 +261,15 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 								deviceClient = DeviceClient.Create(result.AssignedHub, authentication, TransportSettings);
 
 								await deviceClient.OpenAsync();
+
+								logger.LogInformation("Uplink-DeviceID:{0} Azure IoT Hub with Device Provisioning Service connected", deviceId);
 							}
 						}
 					}
-
+					
 					if (!_DeviceClients.TryAdd(deviceId, deviceClient))
 					{
-						logger.LogWarning("Uplink-TryAdd failed for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
+						logger.LogWarning("Uplink-DeviceID:{1} TryAdd failed", deviceId);
 
 						return req.CreateResponse(HttpStatusCode.Conflict);
 					}
@@ -230,9 +278,9 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					{
 						DeviceId = deviceId,
 						ApplicationId = applicationId,
-						WebhookId = applicationSetting.WebhookId,
+						WebhookId = ttiAppplicationSettings.WebhookId,
 						WebhookBaseURL = _theThingsIndustriesSettings.WebhookBaseURL,
-						ApiKey = applicationSetting.ApiKey
+						ApiKey = ttiAppplicationSettings.ApiKey
 					};
 
 					await deviceClient.SetReceiveMessageHandlerAsync(AzureIoTHubClientReceiveMessageHandler, context);

@@ -18,7 +18,35 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
 	using System.Collections.Generic;
 
-	public class MethodSetting
+	public class IoTHubApplicationSetting
+	{
+		public string DtdlModelId { get; set; }
+	}
+
+	public class IoTHubSettings
+	{
+		public string IoTHubConnectionString { get; set; } = string.Empty;
+
+		public Dictionary<string, IoTHubApplicationSetting> Applications { get; set; }
+	}
+
+
+	public class DeviceProvisiongServiceApplicationSetting
+	{
+		public string DtdlModelId { get; set; } = string.Empty;
+
+		public string GroupEnrollmentKey { get; set; } = string.Empty;
+	}
+
+	public class DeviceProvisiongServiceSettings
+	{
+		public string IdScope { get; set; } = string.Empty;
+
+		public Dictionary<string, DeviceProvisiongServiceApplicationSetting> Applications { get; set; }
+	}
+
+
+	public class IoTCentralMethodSetting
 	{
 		public byte Port { get; set; } = 0;
 
@@ -31,29 +59,21 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 	public class IoTCentralSetting
 	{
-		public Dictionary<string, MethodSetting> Methods { get; set; }
-	}
-
-	public class DeviceProvisiongServiceSettings
-	{
-		public string IdScope { get; set; } = string.Empty;
-
-		public string GroupEnrollmentKey { get; set; } = string.Empty;
+		public Dictionary<string, IoTCentralMethodSetting> Methods { get; set; }
 	}
 
 	public class AzureIoTSettings
 	{
-		public string IoTHubConnectionString { get; set; } = string.Empty;
+		public IoTHubSettings IoTHub { get; set; }
 
 		public DeviceProvisiongServiceSettings DeviceProvisioningService { get; set; }
 
 		public IoTCentralSetting IoTCentral { get; set; }
 	}
 
-	public class ApplicationSetting
-	{
-		public string DtdlModelId{ get; set; } = string.Empty;
 
+	public class TheThingsIndustriesSettingApplicationSetting
+	{
 		public string ApiKey { get; set; } = string.Empty;
 
 		public string WebhookId { get; set; } = string.Empty;
@@ -63,6 +83,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	{
 		public string WebhookBaseURL { get; set; } = string.Empty;
 
-		public Dictionary<string, ApplicationSetting> Applications { get; set; }
+		public Dictionary<string, TheThingsIndustriesSettingApplicationSetting> Applications { get; set; }
 	}
 }
