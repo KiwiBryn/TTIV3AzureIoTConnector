@@ -33,6 +33,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		[Function("Ack")]
 		public async Task<HttpResponseData> Ack([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
+			Models.DownlinkAckPayload payload;
 			var logger = executionContext.GetLogger("Ack");
 
 			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
@@ -40,7 +41,17 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			{
 				string payloadText = await req.ReadAsStringAsync();
 
-				Models.DownlinkAckPayload payload = JsonConvert.DeserializeObject<Models.DownlinkAckPayload>(payloadText);
+				try
+				{ 
+					payload = JsonConvert.DeserializeObject<Models.DownlinkAckPayload>(payloadText);
+				}
+				catch (JsonException ex)
+				{
+					logger.LogInformation(ex, "Ack-Payload Invalid JSON:{0}", payloadText);
+
+					return req.CreateResponse(HttpStatusCode.BadRequest);
+				}
+
 				if (payload == null)
 				{
 					logger.LogInformation("Ack-Payload {0} invalid", payloadText);

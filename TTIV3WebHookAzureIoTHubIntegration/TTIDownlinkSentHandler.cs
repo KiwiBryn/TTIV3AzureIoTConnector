@@ -31,6 +31,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		[Function("Sent")]
 		public async Task<HttpResponseData> Sent([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
+			Models.DownlinkSentPayload payload;
 			var logger = executionContext.GetLogger("Sent");
 
 			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
@@ -38,7 +39,17 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			{
 				string payloadText = await req.ReadAsStringAsync();
 
-				Models.DownlinkSentPayload payload = JsonConvert.DeserializeObject<Models.DownlinkSentPayload>(payloadText);
+				try
+				{
+					payload = JsonConvert.DeserializeObject<Models.DownlinkSentPayload>(payloadText);
+				}
+				catch (JsonException ex)
+				{
+					logger.LogInformation(ex, "Sent-Payload Invalid JSON:{0}", payloadText);
+
+					return req.CreateResponse(HttpStatusCode.BadRequest);
+				}
+
 				if (payload == null)
 				{
 					logger.LogInformation("Sent-Payload {0} invalid", payloadText);

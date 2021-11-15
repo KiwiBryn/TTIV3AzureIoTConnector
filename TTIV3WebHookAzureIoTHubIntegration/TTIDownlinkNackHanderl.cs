@@ -33,6 +33,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		[Function("Nack")]
 		public async Task<HttpResponseData> Nack([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
+			Models.DownlinkNackPayload payload;
 			var logger = executionContext.GetLogger("Nack");
 
 			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
@@ -40,7 +41,17 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			{
 				string payloadText = await req.ReadAsStringAsync();
 
-				Models.DownlinkNackPayload payload = JsonConvert.DeserializeObject<Models.DownlinkNackPayload>(payloadText);
+				try
+				{
+					payload = JsonConvert.DeserializeObject<Models.DownlinkNackPayload>(payloadText);
+				}
+				catch (JsonException ex)
+				{
+					logger.LogInformation(ex, "Nack-Payload Invalid JSON:{0}", payloadText);
+
+					return req.CreateResponse(HttpStatusCode.BadRequest);
+				}
+
 				if (payload == null)
 				{
 					logger.LogInformation("Nack-Payload {0} invalid", payloadText);

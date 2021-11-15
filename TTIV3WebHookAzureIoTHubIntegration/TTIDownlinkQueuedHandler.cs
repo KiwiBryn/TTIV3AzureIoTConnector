@@ -34,6 +34,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		[Function("Queued")]
 		public async Task<HttpResponseData> Queued([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
+			Models.DownlinkQueuedPayload payload;
 			var logger = executionContext.GetLogger("Queued");
 
 			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
@@ -41,7 +42,17 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			{
 				string payloadText = await req.ReadAsStringAsync();
 
-				Models.DownlinkQueuedPayload payload = JsonConvert.DeserializeObject<Models.DownlinkQueuedPayload>(payloadText);
+				try
+				{ 
+					payload = JsonConvert.DeserializeObject<Models.DownlinkQueuedPayload>(payloadText);
+				}
+				catch (JsonException ex)
+				{
+					logger.LogInformation(ex, "Queued-Payload Invalid JSON:{0}", payloadText);
+
+					return req.CreateResponse(HttpStatusCode.BadRequest);
+				}
+
 				if (payload == null)
 				{
 					logger.LogInformation("Queued-Payload {0} invalid", payloadText);

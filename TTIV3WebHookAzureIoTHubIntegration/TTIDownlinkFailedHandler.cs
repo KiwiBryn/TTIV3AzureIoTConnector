@@ -33,6 +33,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		[Function("Failed")]
 		public async Task<HttpResponseData> Failed([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
+			Models.DownlinkFailedPayload payload;
 			var logger = executionContext.GetLogger("Failed");
 
 			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
@@ -40,8 +41,18 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			{
 				string payloadText = await req.ReadAsStringAsync();
 
-				Models.DownlinkFailedPayload payload = JsonConvert.DeserializeObject<Models.DownlinkFailedPayload>(payloadText);
-				if (payload == null)
+				try
+				{ 
+					payload = JsonConvert.DeserializeObject<Models.DownlinkFailedPayload>(payloadText);
+				}
+				catch (JsonException ex)
+				{
+					logger.LogInformation(ex, "Failed-Payload Invalid JSON:{0}", payloadText);
+
+					return req.CreateResponse(HttpStatusCode.BadRequest);
+				}
+
+			if (payload == null)
 				{
 					logger.LogInformation("Failed-Payload {0} invalid", payloadText);
 
