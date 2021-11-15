@@ -33,7 +33,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		[Function("Ack")]
 		public async Task<HttpResponseData> Ack([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
-			var logger = executionContext.GetLogger("Queued");
+			var logger = executionContext.GetLogger("Ack");
 
 			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
 			try
