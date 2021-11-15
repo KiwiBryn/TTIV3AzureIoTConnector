@@ -82,48 +82,32 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						queue = methodSetting.Queue;
 
 						// Check to see if special case for Azure IoT central command with no request payload
-						if (payloadText.CompareTo("@") != 0)
-						{
-							try
-							{
-								// Split over multiple lines to improve readability
-								if (!(payloadText.StartsWith("{") && payloadText.EndsWith("}"))
-															&&
-									(!(payloadText.StartsWith("[") && payloadText.EndsWith("]"))))
-								{
-									throw new JsonReaderException();
-								}
-
-								downlink.PayloadDecoded = JToken.Parse(payloadText);
-							}
-							catch (JsonReaderException)
-							{
-								try
-								{
-									JToken value = JToken.Parse(payloadText);
-
-									downlink.PayloadDecoded = new JObject(new JProperty(methodName, value));
-								}
-								catch (JsonReaderException)
-								{
-									downlink.PayloadDecoded = new JObject(new JProperty(methodName, payloadText));
-								}
-							}
-						}
-						else
+						if (payloadText.IsPayloadEmpty())
 						{
 							downlink.PayloadRaw = "";
 						}
 
+						if (!payloadText.IsPayloadEmpty())
+						{
+							if (payloadText.IsPayloadValidJson())
+							{
+								downlink.PayloadDecoded = JToken.Parse(payloadText);
+							}
+							else
+							{
+								downlink.PayloadDecoded = new JObject(new JProperty(methodName, payloadText));
+							}
+						}
+
 						_logger.LogInformation("Downlink-IoT Central DeviceID:{0} Method:{1} MessageID:{2} LockToken:{3} Port:{4} Confirmed:{5} Priority:{6} Queue:{7}",
-								receiveMessageHandlerContext.DeviceId,
-								methodName,
-								message.MessageId,
-								message.LockToken,
-								downlink.Port,
-								downlink.Confirmed,
-								downlink.Priority,
-								queue);
+							receiveMessageHandlerContext.DeviceId,
+							methodName,
+							message.MessageId,
+							message.LockToken,
+							downlink.Port,
+							downlink.Confirmed,
+							downlink.Priority,
+							queue);
 						#endregion
 					}
 					else
@@ -202,6 +186,8 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					using (var client = new WebClient())
 					{
 						client.Headers.Add("Authorization", $"Bearer {receiveMessageHandlerContext.ApiKey}");
+
+						//await deviceClient.CompleteAsync(message);
 
 						client.UploadString(new Uri(url), JsonConvert.SerializeObject(Payload));
 					}
