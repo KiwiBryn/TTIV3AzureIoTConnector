@@ -26,10 +26,11 @@
 //---------------------------------------------------------------------------------
 namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
-	using System.Collections.Concurrent;
-	using Microsoft.Azure.Devices.Client;
 	using Microsoft.Extensions.Logging;
 	using Microsoft.Extensions.Options;
+
+	using LazyCache;
+
 
 	public partial class Integration
 	{
@@ -37,7 +38,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		private readonly AzureIoTSettings _azureIoTSettings;
 		private readonly TheThingsIndustriesSettings _theThingsIndustriesSettings;
 
-		private static readonly ConcurrentDictionary<string, DeviceClient> _DeviceClients = new ConcurrentDictionary<string, DeviceClient>();
+		private static IAppCache _DeviceClients = new CachingService();
 
 		public Integration(ILogger<Integration> logger, IOptions<TheThingsIndustriesSettings> theThingsIndustriesSettings, IOptions<AzureIoTSettings> azureIoTSettings)
 		{

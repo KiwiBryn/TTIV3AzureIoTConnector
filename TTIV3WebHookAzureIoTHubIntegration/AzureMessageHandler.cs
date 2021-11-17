@@ -35,7 +35,8 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			{
 				Models.AzureIoTHubReceiveMessageHandlerContext receiveMessageHandlerContext = (Models.AzureIoTHubReceiveMessageHandlerContext)userContext;
 
-				if (!_DeviceClients.TryGetValue(receiveMessageHandlerContext.DeviceId, out DeviceClient deviceClient))
+				DeviceClient deviceClient = await _DeviceClients.GetAsync<DeviceClient>(receiveMessageHandlerContext.DeviceId);
+				if (deviceClient==null)
 				{
 					_logger.LogWarning("Downlink-DeviceID:{0} unknown", receiveMessageHandlerContext.DeviceId);
 
