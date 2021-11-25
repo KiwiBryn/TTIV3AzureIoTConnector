@@ -55,14 +55,14 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				}
 				catch (JsonException ex)
 				{
-					logger.LogInformation(ex, "Uplink-Payload Invalid JSON:{0}", payloadText);
+					logger.LogWarning(ex, "Uplink-Payload Invalid JSON:{0}", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
 
 				if (payload == null)
 				{
-					logger.LogInformation("Uplink-Payload invalid:{0}", payloadText);
+					logger.LogWarning("Uplink-Payload invalid:{0}", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
@@ -72,7 +72,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 				if ((payload.UplinkMessage.Port == null) || (!payload.UplinkMessage.Port.HasValue) || (payload.UplinkMessage.Port.Value == 0))
 				{
-					logger.LogInformation("Uplink-ApplicationID:{0} DeviceID:{1} Payload Raw:{2} Control message", applicationId, deviceId, payload.UplinkMessage.PayloadRaw);
+					logger.LogInformation("Uplink-DeviceID:{0} ApplicationID:{1} Payload Raw:{2} Control message", deviceId, applicationId, payload.UplinkMessage.PayloadRaw);
 
 					return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 				}
@@ -84,80 +84,90 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				// Validate Azure IoT Hub and DeviceProvisioning Services configuration
 				if ((_azureIoTSettings.DeviceProvisioningService != null) && (_azureIoTSettings.IoTHub != null))
 				{
-					_logger.LogError("Uplink-Azure IoT both Azure Device Provisioning Service and IoT Hub configuration");
+					_logger.LogError("Uplink-Azure IoT both Azure Device Provisioning Service and IoT Hub configuration present");
 
 					return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 				}
 
 				if ((_azureIoTSettings.DeviceProvisioningService == null) && (_azureIoTSettings.IoTHub == null))
 				{
-					_logger.LogError("Uplink-Azure IoT neither Azure Device Provisioning Service or IoT Hub configuration");
+					_logger.LogError("Uplink-Azure IoT neither Azure Device Provisioning Service or IoT Hub configuration present");
 
 					return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 				}
 
 				var options = new MemoryCacheEntryOptions()
 				{
-					Priority = CacheItemPriority.NeverRemove
+					Priority = CacheItemPriority.NeverRemove 
 				};
 
 				DeviceClient deviceClient = null;
 
-				// Validate the Azure IoT Hub Device configuration
+				// Use the Azure IoT Hub Device configuration
 				if (_azureIoTSettings.IoTHub != null)
 				{
 					deviceClient = await _DeviceClients.GetOrAddAsync<DeviceClient>(deviceId, (ICacheEntry x) => IoTHubConnectAsync(applicationId, deviceId, logger), options);
 					if (deviceClient == null)
 					{
-						logger.LogWarning("Uplink-DeviceID:{1} GetOrAddAsync failed", deviceId);
+						logger.LogWarning("Uplink-DeviceID:{0} IoTHub GetOrAddAsync failed", deviceId);
 
 						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 					}
 				}
 
-				// Validate the Azure IoT Hub Device Provisioning Service configuration
+				// Use the Azure IoT Hub Device Provisioning Service configuration
 				if (_azureIoTSettings.DeviceProvisioningService != null)
 				{
 					deviceClient = await _DeviceClients.GetOrAddAsync<DeviceClient>(deviceId, (ICacheEntry x) => DeviceProvisioningServiceConnectAsync(applicationId, deviceId, logger), options);
 					if (deviceClient == null)
 					{
-						logger.LogWarning("Uplink-DeviceID:{1} GetOrAddAsync failed", deviceId);
+						logger.LogWarning("Uplink-DeviceID:{0} DPS GetOrAddAsync failed", deviceId);
 
 						return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 					}
 				}
 
-				JObject telemetryEvent = new JObject
+				try
 				{
-					{ "ApplicationID", applicationId },
-					{ "DeviceEUI" , payload.EndDeviceIds.DeviceEui},
-					{ "DeviceID", deviceId },
-					{ "Port", port },
-					{ "Simulated", payload.Simulated },
-					{ "ReceivedAtUtc", payload.UplinkMessage.ReceivedAtUtc.ToString("s", CultureInfo.InvariantCulture) },
-					{ "PayloadRaw", payload.UplinkMessage.PayloadRaw }
-				};
+					JObject telemetryEvent = new JObject
+					{
+						{ "ApplicationID", applicationId },
+						{ "DeviceEUI" , payload.EndDeviceIds.DeviceEui},
+						{ "DeviceID", deviceId },
+						{ "Port", port },
+						{ "Simulated", payload.Simulated },
+						{ "ReceivedAtUtc", payload.UplinkMessage.ReceivedAtUtc.ToString("s", CultureInfo.InvariantCulture) },
+						{ "PayloadRaw", payload.UplinkMessage.PayloadRaw }
+					};
 
-				// If the payload has been decoded by payload formatter, put it in the message body.
-				if (payload.UplinkMessage.PayloadDecoded != null)
-				{
-					EnumerateChildren(telemetryEvent, payload.UplinkMessage.PayloadDecoded);
+					// If the payload has been decoded by payload formatter, put it in the message body.
+					if (payload.UplinkMessage.PayloadDecoded != null)
+					{
+						EnumerateChildren(telemetryEvent, payload.UplinkMessage.PayloadDecoded);
+					}
+
+					// Send the message to Azure IoT Hub
+					using (Message ioTHubmessage = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(telemetryEvent))))
+					{
+						// Ensure the displayed time is the acquired time rather than the uploaded time. 
+						ioTHubmessage.Properties.Add("iothub-creation-time-utc", payload.UplinkMessage.ReceivedAtUtc.ToString("s", CultureInfo.InvariantCulture));
+						ioTHubmessage.Properties.Add("ApplicationId", applicationId);
+						ioTHubmessage.Properties.Add("DeviceEUI", payload.EndDeviceIds.DeviceEui);
+						ioTHubmessage.Properties.Add("DeviceId", deviceId);
+						ioTHubmessage.Properties.Add("port", port.ToString());
+						ioTHubmessage.Properties.Add("Simulated", payload.Simulated.ToString());
+
+						await deviceClient.SendEventAsync(ioTHubmessage);
+
+						logger.LogInformation("Uplink-DeviceID:{0} SendEventAsync success", deviceId);
+					}
 				}
-
-				// Send the message to Azure IoT Hub
-				using (Message ioTHubmessage = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(telemetryEvent))))
+				catch( Exception ex)
 				{
-					// Ensure the displayed time is the acquired time rather than the uploaded time. 
-					ioTHubmessage.Properties.Add("iothub-creation-time-utc", payload.UplinkMessage.ReceivedAtUtc.ToString("s", CultureInfo.InvariantCulture));
-					ioTHubmessage.Properties.Add("ApplicationId", applicationId);
-					ioTHubmessage.Properties.Add("DeviceEUI", payload.EndDeviceIds.DeviceEui);
-					ioTHubmessage.Properties.Add("DeviceId", deviceId);
-					ioTHubmessage.Properties.Add("port", port.ToString());
-					ioTHubmessage.Properties.Add("Simulated", payload.Simulated.ToString());
+					logger.LogError(ex, "Uplink-DeviceID:{0} SendEventAsync failure", deviceId);
 
-					await deviceClient.SendEventAsync(ioTHubmessage);
-
-					logger.LogInformation("Uplink-DeviceID:{0} SendEventAsync success", payload.EndDeviceIds.DeviceId);
+					// If retries etc fail remove from the cache and it will get tried again on the next message
+					_DeviceClients.Remove(deviceId);
 				}
 			}
 			catch (Exception ex)
@@ -177,21 +187,21 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			// Validate The Things Industries Application configuaration
 			if (!_theThingsIndustriesSettings.Applications.TryGetValue(applicationId, out TheThingsIndustriesSettingApplicationSetting ttiAppplicationSettings))
 			{
-				_logger.LogError("Uplink-AppplicationID:{0} no Application settings configured", applicationId);
+				_logger.LogError("Uplink-AppplicationID:{0} no TTI Application settings configured", applicationId);
 
 				return null;
 			}
 
 			if (string.IsNullOrEmpty(ttiAppplicationSettings.ApiKey))
 			{
-				_logger.LogError("Uplink-AppplicationID:{0} no API Key configured", applicationId);
+				_logger.LogError("Uplink-AppplicationID:{0} no TTI API Key configured", applicationId);
 
 				return null;
 			}
 
 			if (string.IsNullOrEmpty(ttiAppplicationSettings.WebhookId))
 			{
-				_logger.LogError("Uplink- AppplicationID:{0} no Webhook ID configured", applicationId);
+				_logger.LogError("Uplink- AppplicationID:{0} no TTI Webhook ID configured", applicationId);
 
 				return null;
 			}
@@ -199,21 +209,21 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 			if (_azureIoTSettings.IoTHub.Applications == null)
 			{
-				logger.LogError("Uplink-Device Provisioning Service Application settings not configured");
+				logger.LogError("Uplink-IoT Hub Application settings not configured");
 
 				return null;
 			}
 
 			if (!_azureIoTSettings.IoTHub.Applications.TryGetValue(applicationId, out IoTHubApplicationSetting ioTHubApplicationSetting))
 			{
-				logger.LogError("Uplink-ApplicationID:{0} Device Provisioning Service Application settings not configured", applicationId);
+				logger.LogError("Uplink-ApplicationID:{0} IoTHub Application settings not configured", applicationId);
 
 				return null;
 			}
 
 			if (string.IsNullOrEmpty(ioTHubApplicationSetting.DtdlModelId))
 			{
-				logger.LogWarning("Uplink-ApplicationID:{0} Device Provisioning Service Application settings DTDL not configured", applicationId);
+				logger.LogWarning("Uplink-ApplicationID:{0} IoT Hub Application settings DTDL not configured", applicationId);
 
 				deviceClient = DeviceClient.CreateFromConnectionString(_azureIoTSettings.IoTHub.IoTHubConnectionString, deviceId, TransportSettings);
 			}
@@ -239,7 +249,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				return null;
 			}
 
-			Models.AzureIoTHubReceiveMessageHandlerContext context = new Models.AzureIoTHubReceiveMessageHandlerContext()
+			Models.AzureIoTHubDeviceClientContext context = new Models.AzureIoTHubDeviceClientContext()
 			{
 				DeviceId = deviceId,
 				ApplicationId = applicationId,
@@ -276,7 +286,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 			if (string.IsNullOrEmpty(ttiAppplicationSettings.WebhookId))
 			{
-				_logger.LogError("Uplink- AppplicationID:{0} no Webhook ID configured", applicationId);
+				_logger.LogError("Uplink-AppplicationID:{0} no Webhook ID configured", applicationId);
 
 				return null;
 			}
@@ -327,7 +337,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 					try
 					{
-						// If TTI application doesn't have a DTDLV2 ID 
+						// If TTI application does have a DTDLV2 ID 
 						if (!string.IsNullOrEmpty(dpsApplicationSetting.DtdlModelId))
 						{
 							ProvisioningRegistrationAdditionalData provisioningRegistrationAdditionalData = new ProvisioningRegistrationAdditionalData()
@@ -353,7 +363,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						_logger.LogError("Uplink-DeviceID:{0} Status:{1} RegisterAsync failed ", deviceId, result.Status);
 
 						return null;
-
 					}
 
 					IAuthenticationMethod authentication = new DeviceAuthenticationWithRegistrySymmetricKey(result.DeviceId, (securityProvider as SecurityProviderSymmetricKey).GetPrimaryKey());
@@ -366,7 +375,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				}
 			}
 
-			Models.AzureIoTHubReceiveMessageHandlerContext context = new Models.AzureIoTHubReceiveMessageHandlerContext()
+			Models.AzureIoTHubDeviceClientContext context = new Models.AzureIoTHubDeviceClientContext()
 			{
 				DeviceId = deviceId,
 				ApplicationId = applicationId,
@@ -380,7 +389,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			await deviceClient.SetMethodDefaultHandlerAsync(AzureIoTHubClientDefaultMethodHandler, context);
 
 			return deviceClient;
-
 		}
 
 		private void EnumerateChildren(JObject jobject, JToken token)

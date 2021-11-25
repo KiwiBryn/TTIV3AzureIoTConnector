@@ -33,12 +33,12 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		{
 			try
 			{
-				Models.AzureIoTHubReceiveMessageHandlerContext receiveMessageHandlerContext = (Models.AzureIoTHubReceiveMessageHandlerContext)userContext;
+				Models.AzureIoTHubDeviceClientContext context = (Models.AzureIoTHubDeviceClientContext)userContext;
 
-				DeviceClient deviceClient = await _DeviceClients.GetAsync<DeviceClient>(receiveMessageHandlerContext.DeviceId);
+				DeviceClient deviceClient = await _DeviceClients.GetAsync<DeviceClient>(context.DeviceId);
 				if (deviceClient==null)
 				{
-					_logger.LogWarning("Downlink-DeviceID:{0} unknown", receiveMessageHandlerContext.DeviceId);
+					_logger.LogWarning("Downlink-DeviceID:{0} unknown", context.DeviceId);
 
 					return;
 				}
@@ -57,7 +57,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 						if (string.IsNullOrWhiteSpace(methodName))
 						{
-							_logger.LogWarning("Downlink-DeviceID:{0} MessagedID:{1} LockToken:{2} method-name property empty", receiveMessageHandlerContext.DeviceId, message.MessageId, message.LockToken);
+							_logger.LogWarning("Downlink-DeviceID:{0} MessagedID:{1} LockToken:{2} method-name property empty", context.DeviceId, message.MessageId, message.LockToken);
 
 							await deviceClient.RejectAsync(message);
 							return;
@@ -66,7 +66,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						// Look up the method settings to get confirmed, port, priority, and queue
 						if ((_azureIoTSettings == null) || (_azureIoTSettings.IoTCentral == null) || !_azureIoTSettings.IoTCentral.Methods.TryGetValue(methodName, out IoTCentralMethodSetting methodSetting))
 						{
-							_logger.LogWarning("Downlink-DeviceID:{0} MessagedID:{1} LockToken:{2} method-name:{3} has no settings", receiveMessageHandlerContext.DeviceId, message.MessageId, message.LockToken, methodName);
+							_logger.LogWarning("Downlink-DeviceID:{0} MessagedID:{1} LockToken:{2} method-name:{3} has no settings", context.DeviceId, message.MessageId, message.LockToken, methodName);
 							
 							await deviceClient.RejectAsync(message);
 							return;
@@ -101,7 +101,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						}
 
 						_logger.LogInformation("Downlink-IoT Central DeviceID:{0} Method:{1} MessageID:{2} LockToken:{3} Port:{4} Confirmed:{5} Priority:{6} Queue:{7}",
-							receiveMessageHandlerContext.DeviceId,
+							context.DeviceId,
 							methodName,
 							message.MessageId,
 							message.LockToken,
@@ -164,7 +164,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						}
 
 						_logger.LogInformation("Downlink-IoT Hub DeviceID:{0} MessageID:{1} LockToken:{2} Port:{3} Confirmed:{4} Priority:{5} Queue:{6}",
-							receiveMessageHandlerContext.DeviceId,
+							context.DeviceId,
 							message.MessageId,
 							message.LockToken,
 							downlink.Port,
@@ -182,18 +182,18 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						}
 					};
 
-					string url = $"{receiveMessageHandlerContext.WebhookBaseURL}/{receiveMessageHandlerContext.ApplicationId}/webhooks/{receiveMessageHandlerContext.WebhookId}/devices/{receiveMessageHandlerContext.DeviceId}/down/{queue}".ToLower();
+					string url = $"{context.WebhookBaseURL}/{context.ApplicationId}/webhooks/{context.WebhookId}/devices/{context.DeviceId}/down/{queue}".ToLower();
 
 					using (var client = new WebClient())
 					{
-						client.Headers.Add("Authorization", $"Bearer {receiveMessageHandlerContext.ApiKey}");
+						client.Headers.Add("Authorization", $"Bearer {context.ApiKey}");
 
 						//await deviceClient.CompleteAsync(message);
 
 						client.UploadString(new Uri(url), JsonConvert.SerializeObject(Payload));
 					}
 
-					_logger.LogInformation("Downlink-DeviceID:{0} MessageID:{1} LockToken:{2} success", receiveMessageHandlerContext.DeviceId, message.MessageId, message.LockToken);
+					_logger.LogInformation("Downlink-DeviceID:{0} MessageID:{1} LockToken:{2} success", context.DeviceId, message.MessageId, message.LockToken);
 				}
 			}
 			catch (Exception ex)

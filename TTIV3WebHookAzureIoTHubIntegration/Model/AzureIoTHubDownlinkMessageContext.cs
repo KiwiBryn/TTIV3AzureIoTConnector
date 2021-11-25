@@ -16,7 +16,7 @@
 //---------------------------------------------------------------------------------
 namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub.Models
 {
-   public class AzureIoTHubReceiveMessageHandlerContext
+   public class AzureIoTHubDeviceClientContext
    {
       public string WebhookBaseURL { get; set; }
 
