@@ -74,7 +74,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				{
 					logger.LogInformation("Uplink-DeviceID:{0} ApplicationID:{1} Payload Raw:{2} Control message", deviceId, applicationId, payload.UplinkMessage.PayloadRaw);
 
-					return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
+					return req.CreateResponse(HttpStatusCode.OK);
 				}
 
 				int port = payload.UplinkMessage.Port.Value;
