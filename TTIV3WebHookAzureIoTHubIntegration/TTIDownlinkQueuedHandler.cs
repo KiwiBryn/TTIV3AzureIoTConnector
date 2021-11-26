@@ -74,16 +74,16 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
 
+				if (!AzureLockToken.TryGet(payload.DownlinkQueued.CorrelationIds, out string lockToken))
+				{
+					logger.LogWarning("Queued-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, payloadText);
+
+					return req.CreateResponse(HttpStatusCode.BadRequest);
+				}
+
 				// If the message is not confirmed "complete" it as soon as with network
 				if (!payload.DownlinkQueued.Confirmed)
-				{
-					if (!AzureLockToken.TryGet(payload.DownlinkQueued.CorrelationIds, out string lockToken))
-					{
-						logger.LogWarning("Queued-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, payloadText);
-
-						return req.CreateResponse(HttpStatusCode.BadRequest);
-					}
-
+				{ 
 					try
 					{
 						await deviceClient.CompleteAsync(lockToken);
@@ -95,7 +95,11 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						return req.CreateResponse(HttpStatusCode.Conflict);
 					}
 
-					logger.LogInformation("Queued-DeviceID:{0} LockToken:{1} success", payload.EndDeviceIds.DeviceId, lockToken);
+					logger.LogInformation("Queued-DeviceID:{0} LockToken:{1} Unconfirmed success", payload.EndDeviceIds.DeviceId, lockToken);
+				}
+				else
+				{
+					logger.LogInformation("Queued-DeviceID:{0} LockToken:{1} Confirmed success", payload.EndDeviceIds.DeviceId, lockToken);
 				}
 			}
 			catch (Exception ex)
