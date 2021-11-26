@@ -31,12 +31,14 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		[Function("Sent")]
 		public async Task<HttpResponseData> Sent([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
-			Models.DownlinkSentPayload payload;
 			var logger = executionContext.GetLogger("Sent");
 
 			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
 			try
 			{
+				Models.DownlinkSentPayload payload;
+				DeviceClient deviceClient;
+
 				string payloadText = await req.ReadAsStringAsync();
 
 				try
@@ -62,7 +64,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 				logger.LogInformation("Sent-ApplicationID:{0} DeviceID:{1} ", applicationId, deviceId);
 
-				if (!_DeviceClients.TryGetValue(deviceId, out DeviceClient deviceClient))
+				if (!_DeviceClients.TryGetValue(deviceId, out deviceClient))
 				{
 					logger.LogInformation("Sent-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 

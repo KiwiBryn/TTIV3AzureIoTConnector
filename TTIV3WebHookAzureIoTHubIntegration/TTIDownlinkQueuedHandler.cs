@@ -34,12 +34,14 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		[Function("Queued")]
 		public async Task<HttpResponseData> Queued([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
-			Models.DownlinkQueuedPayload payload;
 			var logger = executionContext.GetLogger("Queued");
 
 			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
 			try
 			{
+				Models.DownlinkQueuedPayload payload;
+				DeviceClient deviceClient;
+
 				string payloadText = await req.ReadAsStringAsync();
 
 				try
@@ -65,7 +67,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 				logger.LogInformation("Queued-ApplicationID:{0} DeviceID:{1} ", applicationId, deviceId);
 
-				if (!_DeviceClients.TryGetValue(deviceId, out DeviceClient deviceClient))
+				if (!_DeviceClients.TryGetValue(deviceId, out deviceClient))
 				{
 					logger.LogInformation("Queued-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 

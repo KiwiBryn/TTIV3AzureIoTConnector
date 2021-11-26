@@ -33,12 +33,14 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		[Function("Failed")]
 		public async Task<HttpResponseData> Failed([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
-			Models.DownlinkFailedPayload payload;
 			var logger = executionContext.GetLogger("Failed");
 
 			// Wrap all the processing in a try\catch so if anything blows up we have logged it.
 			try
 			{
+				Models.DownlinkFailedPayload payload;
+				DeviceClient deviceClient;
+
 				string payloadText = await req.ReadAsStringAsync();
 
 				try
@@ -64,7 +66,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 				logger.LogInformation("Failed-ApplicationID:{0} DeviceID:{1} ", applicationId, deviceId);
 
-				if (!_DeviceClients.TryGetValue(deviceId, out DeviceClient deviceClient))
+				if (!_DeviceClients.TryGetValue(deviceId, out deviceClient))
 				{
 					logger.LogInformation("Failed-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 
