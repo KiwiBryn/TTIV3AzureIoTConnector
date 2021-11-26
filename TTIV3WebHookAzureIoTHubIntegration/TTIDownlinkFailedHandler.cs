@@ -54,7 +54,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
 
-			if (payload == null)
+				if (payload == null)
 				{
 					logger.LogInformation("Failed-Payload {0} invalid", payloadText);
 
