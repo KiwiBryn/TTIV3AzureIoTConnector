@@ -64,7 +64,8 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 				logger.LogInformation("Sent-ApplicationID:{0} DeviceID:{1} ", applicationId, deviceId);
 
-				if (!_DeviceClients.TryGetValue(deviceId, out deviceClient))
+				deviceClient = await _DeviceClients.GetAsync<DeviceClient>(deviceId);
+				if (deviceClient == null)
 				{
 					logger.LogInformation("Sent-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 

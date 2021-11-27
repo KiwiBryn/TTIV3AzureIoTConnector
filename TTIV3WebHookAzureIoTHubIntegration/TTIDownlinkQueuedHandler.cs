@@ -67,7 +67,8 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 				logger.LogInformation("Queued-ApplicationID:{0} DeviceID:{1} ", applicationId, deviceId);
 
-				if (!_DeviceClients.TryGetValue(deviceId, out deviceClient))
+				deviceClient = await _DeviceClients.GetAsync<DeviceClient>(deviceId);
+				if(deviceClient==null)
 				{
 					logger.LogInformation("Queued-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
 

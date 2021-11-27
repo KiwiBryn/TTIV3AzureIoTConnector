@@ -33,6 +33,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	using Microsoft.Extensions.Caching.Memory;
 	using Microsoft.Extensions.Logging;
 
+	using LazyCache;
 	using Newtonsoft.Json;
 	using Newtonsoft.Json.Linq;
 
