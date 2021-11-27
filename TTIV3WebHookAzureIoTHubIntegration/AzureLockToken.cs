@@ -28,6 +28,11 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		{
 			azureLockToken = string.Empty;
 
+			if (correlationIds==null)
+			{
+				return false;
+			}
+
 			// if AzureCorrelationPrefix prefix not found bug out
 			if (!correlationIds.Any(o => o.StartsWith(AzureCorrelationPrefix)))
 			{
