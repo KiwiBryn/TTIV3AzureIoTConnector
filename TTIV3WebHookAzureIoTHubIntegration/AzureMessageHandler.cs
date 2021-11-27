@@ -85,7 +85,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						// Check to see if special case for Azure IoT central command with no request payload
 						if (payloadText.IsPayloadEmpty())
 						{
-							downlink.PayloadRaw = "";
+							downlink.PayloadRaw = "AA==";
 						}
 
 						if (!payloadText.IsPayloadEmpty())
@@ -96,7 +96,15 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 							}
 							else
 							{
-								downlink.PayloadDecoded = new JObject(new JProperty(methodName, payloadText));
+								// Normally wouldn't use exceptions for flow control but, I can't think of a better way...
+								try
+								{
+									downlink.PayloadDecoded = new JObject(new JProperty(methodName, JProperty.Parse(payloadText)));
+								}
+								catch(JsonException ex)
+								{
+									downlink.PayloadDecoded = new JObject(new JProperty(methodName, payloadText));
+								}
 							}
 						}
 
