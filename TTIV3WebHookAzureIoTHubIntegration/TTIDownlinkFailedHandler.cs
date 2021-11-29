@@ -17,6 +17,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
 	using System;
 	using System.Net;
+	using System.Threading;
 	using System.Threading.Tasks;
 
 	using Microsoft.Azure.Devices.Client;
@@ -31,7 +32,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	public partial class Integration
 	{
 		[Function("Failed")]
-		public async Task<HttpResponseData> Failed([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
+		public static async Task<HttpResponseData> Failed([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext, CancellationToken cancellationToken)
 		{
 			var logger = executionContext.GetLogger("Failed");
 
@@ -39,7 +40,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			try
 			{
 				Models.DownlinkFailedPayload payload;
-				DeviceClient deviceClient;
 
 				string payloadText = await req.ReadAsStringAsync();
 
@@ -49,14 +49,14 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				}
 				catch (JsonException ex)
 				{
-					logger.LogInformation(ex, "Failed-Payload Invalid JSON:{0}", payloadText);
+					logger.LogError(ex, "Failed-Payload Invalid JSON:{payloadText}", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
 
 				if (payload == null)
 				{
-					logger.LogInformation("Failed-Payload {0} invalid", payloadText);
+					logger.LogError("Failed-Payload invalid Payload:{payloadText}", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
@@ -64,35 +64,33 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				string applicationId = payload.EndDeviceIds.ApplicationIds.ApplicationId;
 				string deviceId = payload.EndDeviceIds.DeviceId;
 
-				logger.LogInformation("Failed-ApplicationID:{0} DeviceID:{1} ", applicationId, deviceId);
+				logger.LogInformation("Failed-DeviceID:{deviceId} ApplicationID:{applicationId}", applicationId, deviceId);
 
-				deviceClient = await _DeviceClients.GetAsync<DeviceClient>(deviceId);
+				DeviceClient deviceClient = await _DeviceClients.GetAsync<DeviceClient>(deviceId);
 				if (deviceClient == null)
 				{
-					logger.LogInformation("Failed-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
+					logger.LogInformation("Failed-DeviceID:{deviceId} unknown", deviceId);
 
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
 
 				if (!AzureLockToken.TryGet(payload.DownlinkFailed.CorrelationIds, out string lockToken))
 				{
-					logger.LogWarning("Failed-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, payloadText);
+					logger.LogWarning("Failed-DeviceID:{DeviceId} LockToken missing from Payload:{payloadText}", payload.EndDeviceIds.DeviceId, payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
 
 				try
 				{
-					await deviceClient.AbandonAsync(lockToken);
+					await deviceClient.AbandonAsync(lockToken, cancellationToken);
+
+					logger.LogInformation("Failed-DeviceID:{DeviceId} AbandonAsync success LockToken:{lockToken}", payload.EndDeviceIds.DeviceId, lockToken);
 				}
 				catch (DeviceMessageLockLostException)
 				{
-					logger.LogWarning("Failed-RejectAsync DeviceID:{0} LockToken:{1} timeout", payload.EndDeviceIds.DeviceId, lockToken);
-
-					return req.CreateResponse(HttpStatusCode.Conflict);
+					logger.LogWarning("Failed-DeviceID:{DeviceId} AbandonAsync timeout LockToken:{lockToken}", payload.EndDeviceIds.DeviceId, lockToken);
 				}
-
-				logger.LogInformation("Failed-DeviceID:{0} LockToken:{1} success", payload.EndDeviceIds.DeviceId, lockToken);
 			}
 			catch (Exception ex)
 			{

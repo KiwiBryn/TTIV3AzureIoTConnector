@@ -17,13 +17,14 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
 	using System;
 	using System.Net;
+	using System.Threading;
 	using System.Threading.Tasks;
 
 	using Microsoft.Azure.Devices.Client;
 	using Microsoft.Azure.Devices.Client.Exceptions;
 	using Microsoft.Azure.Functions.Worker;
 	using Microsoft.Azure.Functions.Worker.Http;
-	
+
 	using Microsoft.Extensions.Logging;
 
 	using Newtonsoft.Json;
@@ -31,7 +32,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	public partial class Integration
 	{
 		[Function("Ack")]
-		public async Task<HttpResponseData> Ack([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
+		public static async Task<HttpResponseData> Ack([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext, CancellationToken cancellationToken)
 		{
 			var logger = executionContext.GetLogger("Ack");
 
@@ -39,7 +40,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			try
 			{
 				Models.DownlinkAckPayload payload;
-				DeviceClient deviceClient;
 
 				string payloadText = await req.ReadAsStringAsync();
 
@@ -49,14 +49,14 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				}
 				catch (JsonException ex)
 				{
-					logger.LogInformation(ex, "Ack-Payload Invalid JSON:{0}", payloadText);
+					logger.LogError(ex, "Ack-Payload Invalid JSON:{payloadText}", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
 
 				if (payload == null)
 				{
-					logger.LogInformation("Ack-Payload {0} invalid", payloadText);
+					logger.LogError("Ack-Payload invalid Payload:{payloadText}", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
@@ -64,39 +64,37 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				string applicationId = payload.EndDeviceIds.ApplicationIds.ApplicationId;
 				string deviceId = payload.EndDeviceIds.DeviceId;
 
-				logger.LogInformation("Ack-ApplicationID:{0} DeviceID:{1} ", applicationId, deviceId);
+				logger.LogInformation("Ack-DeviceID:{deviceId} ApplicationID:{applicationId}", deviceId, applicationId);
 
-				deviceClient = await _DeviceClients.GetAsync<DeviceClient>(deviceId);
+				DeviceClient deviceClient = await _DeviceClients.GetAsync<DeviceClient>(deviceId);
 				if (deviceClient == null)
 				{
-					logger.LogInformation("Ack-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
+					logger.LogWarning("Ack-DeviceID:{deviceId} unknown", deviceId);
 
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
 
 				if (!AzureLockToken.TryGet(payload.DownlinkAck.CorrelationIds, out string lockToken))
 				{
-					logger.LogWarning("Ack-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, payloadText);
+					logger.LogWarning("Ack-DeviceID:{deviceId} LockToken missing from Payload:{payloadText}", deviceId, payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
 
 				try
 				{
-					await deviceClient.CompleteAsync(lockToken);
+					await deviceClient.CompleteAsync(lockToken, cancellationToken);
+
+					logger.LogInformation("Ack-DeviceID:{deviceId} CompleteAsync success LockToken:{lockToken}", deviceId, lockToken);
 				}
 				catch (DeviceMessageLockLostException)
 				{
-					logger.LogWarning("Ack-CompleteAsync DeviceID:{0} LockToken:{1} timeout", payload.EndDeviceIds.DeviceId, lockToken);
-
-					return req.CreateResponse(HttpStatusCode.Conflict);
+					logger.LogWarning("Ack-DeviceID:{deviceId} CompleteAsync timeout LockToken:{lockToken}", deviceId, lockToken);
 				}
-
-				logger.LogInformation("Ack-DeviceID:{0} LockToken:{1} success", payload.EndDeviceIds.DeviceId, lockToken);
 			}
 			catch (Exception ex)
 			{
-				logger.LogError(ex, "Ack message processing failed");
+				logger.LogError(ex, "Ack-message processing failed");
 
 				return req.CreateResponse(HttpStatusCode.InternalServerError);
 			}

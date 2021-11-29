@@ -17,6 +17,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
 	using System;
 	using System.Net;
+	using System.Threading;
 	using System.Threading.Tasks;
 
 	using Microsoft.Azure.Devices.Client;
@@ -31,7 +32,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	public partial class Integration
 	{
 		[Function("Nack")]
-		public async Task<HttpResponseData> Nack([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
+		public static async Task<HttpResponseData> Nack([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext, CancellationToken cancellationToken)
 		{
 			var logger = executionContext.GetLogger("Nack");
 
@@ -39,7 +40,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			try
 			{
 				Models.DownlinkNackPayload payload;
-				DeviceClient deviceClient;
 
 				string payloadText = await req.ReadAsStringAsync();
 
@@ -49,14 +49,14 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				}
 				catch (JsonException ex)
 				{
-					logger.LogInformation(ex, "Nack-Payload Invalid JSON:{0}", payloadText);
+					logger.LogError(ex, "Nack-Payload Invalid JSON:{payloadText}", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
 
 				if (payload == null)
 				{
-					logger.LogInformation("Nack-Payload {0} invalid", payloadText);
+					logger.LogError("Nack-Payload invalid Payload:{payloadText}", payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
@@ -64,39 +64,37 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				string applicationId = payload.EndDeviceIds.ApplicationIds.ApplicationId;
 				string deviceId = payload.EndDeviceIds.DeviceId;
 
-				logger.LogInformation("Nack-ApplicationID:{0} DeviceID:{1} ", applicationId, deviceId);
+				logger.LogInformation("Nack-DeviceID:{deviceId} ApplicationID:{applicationId} ", deviceId, applicationId);
 
-				deviceClient = await _DeviceClients.GetAsync<DeviceClient>(deviceId);
+				DeviceClient deviceClient = await _DeviceClients.GetAsync<DeviceClient>(deviceId);
 				if (deviceClient == null)
 				{
-					logger.LogInformation("Nack-Unknown device for ApplicationID:{0} DeviceID:{1}", applicationId, deviceId);
+					logger.LogInformation("Nack-DeviceID:{deviceId} unknown", deviceId);
 
 					return req.CreateResponse(HttpStatusCode.Conflict);
 				}
 
 				if (!AzureLockToken.TryGet(payload.DownlinkNack.CorrelationIds, out string lockToken))
 				{
-					logger.LogWarning("Nack-DeviceID:{0} LockToken missing from payload:{1}", payload.EndDeviceIds.DeviceId, payloadText);
+					logger.LogWarning("Nack-DeviceID:{0} LockToken missing from Payload:{payloadText}", payload.EndDeviceIds.DeviceId, payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
 
 				try
 				{
-					await deviceClient.RejectAsync(lockToken);
+					await deviceClient.RejectAsync(lockToken, cancellationToken);
+
+					logger.LogInformation("Nack-DeviceID:{deviceId} RejectAsync success LockToken:{lockToken}", deviceId, lockToken);
 				}
 				catch (DeviceMessageLockLostException)
 				{
-					logger.LogWarning("Nack-RejectAsync DeviceID:{0} LockToken:{1} timeout", payload.EndDeviceIds.DeviceId, lockToken);
-
-					return req.CreateResponse(HttpStatusCode.Conflict);
+					logger.LogWarning("Nack-DeviceID:{deviceId} RejectAsync timeout LockToken:{lockToken}", deviceId, lockToken);
 				}
-
-				logger.LogInformation("Nack-DeviceID:{0} LockToken:{1} success", payload.EndDeviceIds.DeviceId, lockToken);
 			}
 			catch (Exception ex)
 			{
-				logger.LogError(ex, "Nack message processing failed");
+				logger.LogError(ex, "Nack-message processing failed");
 
 				return req.CreateResponse(HttpStatusCode.InternalServerError);
 			}
