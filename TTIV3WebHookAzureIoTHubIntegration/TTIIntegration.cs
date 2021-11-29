@@ -38,7 +38,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		private readonly AzureIoTSettings _azureIoTSettings;
 		private readonly TheThingsIndustriesSettings _theThingsIndustriesSettings;
 
-		private static IAppCache _DeviceClients = new CachingService();
+		private readonly static IAppCache _DeviceClients = new CachingService();
 
 		public Integration(ILogger<Integration> logger, IOptions<TheThingsIndustriesSettings> theThingsIndustriesSettings, IOptions<AzureIoTSettings> azureIoTSettings)
 		{
