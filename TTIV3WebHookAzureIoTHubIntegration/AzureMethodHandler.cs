@@ -27,11 +27,11 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		{
 			if (methodRequest.DataAsJson != null)
 			{
-				_logger.LogWarning("AzureIoTHubClientDefaultMethodHandler name:{0} payload:{1}", methodRequest.Name, methodRequest.DataAsJson);
+				_logger.LogWarning("AzureIoTHubClientDefaultMethodHandler name:{Name} payload:{DataAsJson}", methodRequest.Name, methodRequest.DataAsJson);
 			}
 			else
 			{
-				_logger.LogWarning("AzureIoTHubClientDefaultMethodHandler name:{0} payload:NULL", methodRequest.Name);
+				_logger.LogWarning("AzureIoTHubClientDefaultMethodHandler name:{Name} payload:NULL", methodRequest.Name);
 			}
 
 			return new MethodResponse(Encoding.ASCII.GetBytes("{\"message\":\"The TTIV3 Connector does not support Direct Methods.\"}"), 400);
