@@ -17,7 +17,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
 	using System;
 	using System.Net;
-	using System.Threading;
 	using System.Threading.Tasks;
 
 	using Microsoft.Azure.Devices.Client;
@@ -32,7 +31,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	public partial class Integration
 	{
 		[Function("Nack")]
-		public static async Task<HttpResponseData> Nack([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext, CancellationToken cancellationToken)
+		public static async Task<HttpResponseData> Nack([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
 			var logger = executionContext.GetLogger("Nack");
 
@@ -76,14 +75,14 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 				if (!AzureLockToken.TryGet(payload.DownlinkNack.CorrelationIds, out string lockToken))
 				{
-					logger.LogWarning("Nack-DeviceID:{0} LockToken missing from Payload:{payloadText}", payload.EndDeviceIds.DeviceId, payloadText);
+					logger.LogWarning("Nack-DeviceID:{deviceId} LockToken missing from Payload:{payloadText}", payload.EndDeviceIds.DeviceId, payloadText);
 
 					return req.CreateResponse(HttpStatusCode.BadRequest);
 				}
 
 				try
 				{
-					await deviceClient.RejectAsync(lockToken, cancellationToken);
+					await deviceClient.RejectAsync(lockToken);
 
 					logger.LogInformation("Nack-DeviceID:{deviceId} RejectAsync success LockToken:{lockToken}", deviceId, lockToken);
 				}

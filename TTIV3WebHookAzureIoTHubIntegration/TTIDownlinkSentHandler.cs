@@ -17,7 +17,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
 	using System;
 	using System.Net;
-	using System.Threading;
 	using System.Threading.Tasks;
 
 	using Microsoft.Azure.Devices.Client;
@@ -32,7 +31,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	public partial class Integration
 	{
 		[Function("Sent")]
-		public static async Task<HttpResponseData> Sent([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext, CancellationToken cancellationToken)
+		public static async Task<HttpResponseData> Sent([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
 			var logger = executionContext.GetLogger("Sent");
 
@@ -83,13 +82,13 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				
 				try
 				{
-					await deviceClient.CompleteAsync(lockToken, cancellationToken);
+					await deviceClient.CompleteAsync(lockToken);
 
 					logger.LogInformation("Sent-DeviceID:{DeviceId} CompleteAsync success LockToken:{lockToken}", payload.EndDeviceIds.DeviceId, lockToken);
 				}
 				catch (DeviceMessageLockLostException)
 				{
-					logger.LogWarning("Sent-DeviceID:{DeviceId} CompleteAsync timeout LockToken:{1}", payload.EndDeviceIds.DeviceId, lockToken);
+					logger.LogWarning("Sent-DeviceID:{DeviceId} CompleteAsync timeout LockToken:{lockToken}", payload.EndDeviceIds.DeviceId, lockToken);
 				}
 			}
 			catch (Exception ex)

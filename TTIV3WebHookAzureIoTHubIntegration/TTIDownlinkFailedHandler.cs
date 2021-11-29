@@ -17,7 +17,6 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 {
 	using System;
 	using System.Net;
-	using System.Threading;
 	using System.Threading.Tasks;
 
 	using Microsoft.Azure.Devices.Client;
@@ -32,7 +31,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 	public partial class Integration
 	{
 		[Function("Failed")]
-		public static async Task<HttpResponseData> Failed([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext, CancellationToken cancellationToken)
+		public static async Task<HttpResponseData> Failed([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req, FunctionContext executionContext)
 		{
 			var logger = executionContext.GetLogger("Failed");
 
@@ -83,7 +82,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 				try
 				{
-					await deviceClient.AbandonAsync(lockToken, cancellationToken);
+					await deviceClient.AbandonAsync(lockToken);
 
 					logger.LogInformation("Failed-DeviceID:{DeviceId} AbandonAsync success LockToken:{lockToken}", payload.EndDeviceIds.DeviceId, lockToken);
 				}
