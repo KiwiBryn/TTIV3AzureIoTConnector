@@ -29,7 +29,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 	public partial class Integration
 	{
-		private async Task AzureIoTHubClientReceiveMessageHandler(Message message, object userContext)
+		private async Task AzureIoTHubClientReceiveMessageHandler(Message message, object userContext) 
 		{
 			try
 			{
@@ -67,7 +67,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						if ((_azureIoTSettings == null) || (_azureIoTSettings.IoTCentral == null) || !_azureIoTSettings.IoTCentral.Methods.TryGetValue(methodName, out IoTCentralMethodSetting methodSetting))
 						{
 							_logger.LogWarning("Downlink-DeviceID:{0} MessagedID:{1} LockToken:{2} method-name:{3} has no settings", context.DeviceId, message.MessageId, message.LockToken, methodName);
-							
+
 							await deviceClient.RejectAsync(message);
 							return;
 						}
@@ -85,7 +85,17 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 						// Check to see if special case for Azure IoT central command with no request payload
 						if (payloadText.IsPayloadEmpty())
 						{
-							downlink.PayloadRaw = "AA==";
+							if (methodSetting.Payload.IsPayloadValidJson())
+							{
+								downlink.PayloadDecoded = JToken.Parse(methodSetting.Payload);
+							}
+							else
+							{
+								_logger.LogWarning("Downlink-DeviceID:{0} MessagedID:{1} LockToken:{2} method-name:{3} payload invalid {4}", context.DeviceId, message.MessageId, message.LockToken, methodName, methodSetting.Payload);
+
+								await deviceClient.RejectAsync(message);
+								return;
+							}
 						}
 
 						if (!payloadText.IsPayloadEmpty())

@@ -55,6 +55,8 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 		public Models.DownlinkPriority Priority { get; set; } = Models.DownlinkPriority.Normal;
 
 		public Models.DownlinkQueue Queue { get; set; } = Models.DownlinkQueue.Replace;
+
+		public string Payload { get; set; } = string.Empty;
 	}
 
 	public class IoTCentralSetting
