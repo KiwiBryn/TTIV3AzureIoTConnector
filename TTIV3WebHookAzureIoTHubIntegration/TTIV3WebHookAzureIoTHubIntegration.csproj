@@ -11,8 +11,8 @@
     <Copyright>devMobile Software, Apache License, Version 2.0</Copyright>
     <RepositoryUrl>https://github.com/KiwiBryn/TTIV3AzureIoTConnector</RepositoryUrl>
     <PackageTags>LoRaWAN TheThingsNetwork TheThingsIndustries TheThingsStack</PackageTags>
-    <AssemblyVersion>1.0.2.0</AssemblyVersion>
-    <FileVersion>1.0.2.0</FileVersion>
+    <AssemblyVersion>1.0.5.0</AssemblyVersion>
+    <FileVersion>1.0.5.0</FileVersion>
     <Product>The Things Industries V3 WebHook Azure IoT Hub Integration</Product>
   </PropertyGroup>
   <ItemGroup>
