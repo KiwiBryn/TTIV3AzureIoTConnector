@@ -84,14 +84,14 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				// Validate Azure IoT Hub and DeviceProvisioning Services configuration
 				if ((_azureIoTSettings.DeviceProvisioningService != null) && (_azureIoTSettings.IoTHub != null))
 				{
-					_logger.LogError("Uplink-Azure IoT both Azure Device Provisioning Service and IoT Hub configuration present");
+					logger.LogError("Uplink-Azure IoT both Azure Device Provisioning Service and IoT Hub configuration present");
 
 					return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 				}
 
 				if ((_azureIoTSettings.DeviceProvisioningService == null) && (_azureIoTSettings.IoTHub == null))
 				{
-					_logger.LogError("Uplink-Azure IoT neither Azure Device Provisioning Service or IoT Hub configuration present");
+					logger.LogError("Uplink-Azure IoT neither Azure Device Provisioning Service or IoT Hub configuration present");
 
 					return req.CreateResponse(HttpStatusCode.UnprocessableEntity);
 				}
@@ -187,21 +187,21 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			// Validate The Things Industries Application configuaration
 			if (!_theThingsIndustriesSettings.Applications.TryGetValue(applicationId, out TheThingsIndustriesSettingApplicationSetting ttiAppplicationSettings))
 			{
-				_logger.LogError("Uplink-AppplicationID:{applicationId} no TTI Application settings configured", applicationId);
+				logger.LogError("Uplink-AppplicationID:{applicationId} no TTI Application settings configured", applicationId);
 
 				return null;
 			}
 
 			if (string.IsNullOrEmpty(ttiAppplicationSettings.ApiKey))
 			{
-				_logger.LogError("Uplink-AppplicationID:{applicationId} no TTI API Key configured", applicationId);
+				logger.LogError("Uplink-AppplicationID:{applicationId} no TTI API Key configured", applicationId);
 
 				return null;
 			}
 
 			if (string.IsNullOrEmpty(ttiAppplicationSettings.WebhookId))
 			{
-				_logger.LogError("Uplink- AppplicationID:{applicationId} no TTI Webhook ID configured", applicationId);
+				logger.LogError("Uplink- AppplicationID:{applicationId} no TTI Webhook ID configured", applicationId);
 
 				return null;
 			}
@@ -240,11 +240,11 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			{
 				await deviceClient.OpenAsync();
 
-				logger.LogInformation("Uplink-DeviceID:{deviceId} Azure IoT Hub connected(connection string)", deviceId);
+				logger.LogInformation("Uplink-DeviceID:{deviceId} Azure IoT Hub connected", deviceId);
 			}
 			catch (DeviceNotFoundException)
 			{
-				logger.LogWarning("Uplink-Unknown DeviceID:{0}", deviceId);
+				logger.LogWarning("Uplink-Unknown DeviceID:{deviceId}", deviceId);
 
 				return null;
 			}
@@ -272,21 +272,21 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 			// Validate The Things Industries Application configuaration
 			if (!_theThingsIndustriesSettings.Applications.TryGetValue(applicationId, out TheThingsIndustriesSettingApplicationSetting ttiAppplicationSettings))
 			{
-				_logger.LogError("Uplink-AppplicationID:{applicationId} no Application settings configured", applicationId);
+				logger.LogError("Uplink-AppplicationID:{applicationId} no Application settings configured", applicationId);
 
 				return null;
 			}
 
 			if (string.IsNullOrEmpty(ttiAppplicationSettings.ApiKey))
 			{
-				_logger.LogError("Uplink-AppplicationID:{applicationId} no API Key configured", applicationId);
+				logger.LogError("Uplink-AppplicationID:{applicationId} no API Key configured", applicationId);
 
 				return null;
 			}
 
 			if (string.IsNullOrEmpty(ttiAppplicationSettings.WebhookId))
 			{
-				_logger.LogError("Uplink-AppplicationID:{applicationId} no Webhook ID configured", applicationId);
+				logger.LogError("Uplink-AppplicationID:{applicationId} no Webhook ID configured", applicationId);
 
 				return null;
 			}
@@ -353,15 +353,14 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 					}
 					catch (ProvisioningTransportException ex)
 					{
-						logger.LogInformation(ex, "Uplink-DeviceID:{0} RegisterAsync failed IDScope and/or GroupEnrollmentKey invalid", deviceId);
+						logger.LogError("Uplink-DeviceID:{deviceId} RegisterAsync failed IDScope and/or GroupEnrollmentKey invalid", deviceId);
 
 						return null;
 					}
 
 					if (result.Status != ProvisioningRegistrationStatusType.Assigned)
 					{
-						_logger.LogError("Uplink-DeviceID:{0} Status:{1} RegisterAsync failed ", deviceId, result.Status);
-
+						logger.LogWarning("Uplink-DeviceID:{deviceId} Status:{result.Status} RegisterAsync failed ", deviceId, result.Status);
 						return null;
 					}
 
@@ -371,7 +370,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 					await deviceClient.OpenAsync();
 
-					logger.LogInformation("Uplink-DeviceID:{0} Azure IoT Hub connected (Device Provisioning Service)", deviceId);
+					logger.LogInformation("Uplink-DeviceID:{deviceId} Azure IoT Hub connected (Device Provisioning Service)", deviceId);
 				}
 			}
 

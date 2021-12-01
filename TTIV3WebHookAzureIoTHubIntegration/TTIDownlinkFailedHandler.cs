@@ -63,7 +63,7 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 				string applicationId = payload.EndDeviceIds.ApplicationIds.ApplicationId;
 				string deviceId = payload.EndDeviceIds.DeviceId;
 
-				logger.LogInformation("Failed-DeviceID:{deviceId} ApplicationID:{applicationId}", applicationId, deviceId);
+				logger.LogInformation("Failed-DeviceID:{deviceId} ApplicationID:{applicationId}", deviceId, applicationId);
 
 				DeviceClient deviceClient = await _DeviceClients.GetAsync<DeviceClient>(deviceId);
 				if (deviceClient == null)
