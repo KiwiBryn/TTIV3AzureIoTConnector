@@ -1,20 +1,17 @@
 # TTIV3AzureIoTConnector
 Azure IoT Identity Translation cloud gateway for The Things Stack using a webhook integration.
 
-There is a fairly complete write up on [Hackster.IO](https://www.hackster.io/KiwiBryn/the-things-industries-tti-v3-azure-iot-connector-revisited-db93e8) 
+This project is based on the "learnings" from three other projects 
 
-This is the based on my previous projects
-
-[TTI V3 Connector Azure Storage Queues](https://github.com/KiwiBryn/TTIV3AzureIoTConnector/tree/master/HttpInputStorageQueueOutput)
+[TTI V3 Azure Storage Queues](https://github.com/KiwiBryn/TTIV3AzureIoTConnector/tree/master/HttpInputStorageQueueOutput)
 
 [TTN V3 Azure IoT Connector](https://github.com/KiwiBryn/TTNV3AzureIoTConnector)
 
 [TTN V2 Azure IoT Connector](https://github.com/KiwiBryn/AzureIoTTheThingsNetworkIntegration)
 
-
+There is a fairly complete write up on [Hackster.IO](https://www.hackster.io/KiwiBryn/the-things-industries-tti-v3-azure-iot-connector-revisited-db93e8) 
 
 ![TTI Gateway Webhook based Architecture](TTIV3GatewayV4.5.png)
-
 
 For more detail I have a series of blog posts written as I was bulidng the connector
 
@@ -35,4 +32,3 @@ For more detail I have a series of blog posts written as I was bulidng the conne
 [Azure Device Provisioning Service(DPS) when transient isn’t](http://blog.devmobile.co.nz/2021/11/14/azure-device-provisioning-servicedps-when-transient-isnt/)
 
 [TTI V3 Connector Azure IoT Central Cloud to Device(C2D)](http://blog.devmobile.co.nz/2021/11/17/tti-v3-connector-azure-iot-central-cloud-to-devicec2d/)
-
