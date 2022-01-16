@@ -1,11 +1,22 @@
 # TTIV3AzureIoTConnector
 Azure IoT Identity Translation cloud gateway for The Things Stack using a webhook integration.
 
-![TTI Gateway Webhook based Architecure](TTIV3GatewayV4.5.png)
-
 There is a fairly complete write up on [Hackster.IO](https://www.hackster.io/KiwiBryn/the-things-industries-tti-v3-azure-iot-connector-revisited-db93e8) 
 
-For more detail I have a series of blog posts written about the application
+This is the based on my previous projects
+
+[TTI V3 Connector Azure Storage Queues](https://github.com/KiwiBryn/TTIV3AzureIoTConnector/tree/master/HttpInputStorageQueueOutput)
+
+[TTN V3 Azure IoT Connector](https://github.com/KiwiBryn/TTNV3AzureIoTConnector)
+
+[TTN V2 Azure IoT Connector](https://github.com/KiwiBryn/AzureIoTTheThingsNetworkIntegration)
+
+
+
+![TTI Gateway Webhook based Architecture](TTIV3GatewayV4.5.png)
+
+
+For more detail I have a series of blog posts written as I was bulidng the connector
 
 [TTN V3 Connector Revisited](http://blog.devmobile.co.nz/2021/10/04/ttn-v3-connector-revisited/)
 
