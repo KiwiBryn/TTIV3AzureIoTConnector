@@ -20,8 +20,8 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 	public class IoTHubApplicationSetting
 	{
-		public string DtdlModelId { get; set; }
-	}
+		public string DtdlModelId { get; set; } = string.Empty;
+    }
 
 	public class IoTHubSettings
 	{
@@ -33,9 +33,9 @@ namespace devMobile.IoT.TheThingsIndustries.AzureIoTHub
 
 	public class DeviceProvisiongServiceApplicationSetting
 	{
-		public string DtdlModelId { get; set; } = string.Empty;
+        public string DtdlModelId { get; set; } = string.Empty;
 
-		public string GroupEnrollmentKey { get; set; } = string.Empty;
+        public string GroupEnrollmentKey { get; set; } = string.Empty;
 	}
 
 	public class DeviceProvisiongServiceSettings
